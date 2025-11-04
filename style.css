@@ -512,6 +512,294 @@ body {
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
+/* ========== BẮT ĐẦU CODE MỚI CHO TRANG CHI TIẾT ========== */
+/* ================================================== */
+
+/* ========== BREADCRUMBS ========== */
+.breadcrumb-nav {
+  margin: 16px 0;
+  font-size: 14px;
+}
+.breadcrumb-nav ol {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.breadcrumb-nav li {
+  display: flex;
+  align-items: center;
+}
+.breadcrumb-nav li:not(:last-child)::after {
+  content: "/";
+  margin: 0 8px;
+  color: #6b7280;
+}
+.breadcrumb-nav a {
+  color: #2563eb;
+  text-decoration: none;
+}
+.breadcrumb-nav a:hover {
+  text-decoration: underline;
+}
+.breadcrumb-nav li[aria-current="page"] {
+  color: #374151;
+  font-weight: 600;
+  /* Giới hạn 2 dòng cho tên SP dài */
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ========== PRODUCT DETAIL LAYOUT (MỚI) ========== */
+/* Ghi đè .product-detail cũ (nếu có) */
+.product-detail-layout {
+  display: grid;
+  grid-template-columns: 1fr; /* Mặc định 1 cột cho mobile */
+  gap: 24px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  margin: 20px 0;
+}
+
+@media (min-width: 768px) {
+  /* 2 cột trên desktop */
+  .product-detail-layout {
+    grid-template-columns: 40% 1fr; /* 40% cho ảnh, còn lại cho info */
+  }
+}
+
+/* ========== CỘT TRÁI: HÌNH ẢNH ========== */
+.product-images {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky; /* Dính lại khi cuộn */
+  top: 20px;
+}
+.main-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6;
+}
+.thumbnail-gallery {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.thumb-item {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+.thumb-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.thumb-item.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+.thumb-item:hover {
+  border-color: #9ca3af;
+}
+
+/* ========== CỘT PHẢI: THÔNG TIN ========== */
+.product-info-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.product-title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* --- Giá sản phẩm --- */
+.price-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+}
+.sell-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2563eb; /* Màu đỏ cho giá bán */
+}
+.original-price {
+  font-size: 16px;
+  color: #6b7280;
+  text-decoration: line-through;
+}
+.discount-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 8px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 6px;
+}
+
+/* --- Nút Mua/Tư vấn --- */
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 1024px) {
+  .action-buttons {
+    grid-template-columns: 1fr 1fr; /* 2 cột trên desktop */
+  }
+}
+
+.action-buttons button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.action-buttons button strong {
+  font-size: 16px;
+}
+.action-buttons button span {
+  font-size: 12px;
+  color: #4b5563;
+}
+.btn-buy-now {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.btn-buy-now span {
+  color: #f9fafb;
+}
+.btn-buy-now:hover {
+  filter: brightness(1.05);
+}
+
+.btn-consult {
+  background: #fff;
+  border: 1px solid #2563eb;
+  color: #2563eb;
+}
+.btn-consult:hover {
+  background: #eff6ff;
+}
+
+/* --- Perks (Lợi ích) --- */
+.product-perks {
+  list-style: none;
+  padding: 10px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+/* --- Info Box (Quà, Hỗ trợ, KM) --- */
+.info-box {
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.info-box .box-header {
+  font-weight: 600;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  color: #111827;
+}
+.info-box ul {
+  padding: 10px 12px 10px 30px;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #374151;
+}
+
+/* ========== SẢN PHẨM MUA KÈM ========== */
+.related-products {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  margin-top: 24px;
+}
+.related-header {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+.related-header h3 {
+  font-size: 18px;
+}
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.related-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-decoration: none;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 8px;
+  transition: box-shadow 0.2s;
+}
+.related-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.related-card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.related-card p {
+  font-size: 14px;
+  line-height: 1.4;
+  /* 2 lines truncate */
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.8em; /* Giữ 2 dòng */
+}
+.related-card strong {
+  margin-top: auto;
+  color: #ef4444;
+  font-size: 15px;
+}
+
 .searchbox{
   border-radius:20px;
   width:50%;

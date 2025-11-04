@@ -1,3 +1,4 @@
+
 // ======= LocalStorage Keys =======
 const LS_PRODUCTS_KEY = "admin_products";
 const LS_CART_KEY = "cart";
@@ -475,22 +476,128 @@ if (document.title.includes("Chi tiết sản phẩm")) {
   const detail = document.getElementById("product-detail");
 
   function renderDetail() {
-    const catalog = loadProducts(); // <-- đã lọc hidden=false
+    const catalog = loadProducts();
     const p = catalog.find((x) => String(x.ma) === String(ma));
 
     if (p && detail) {
       const img = p.imgSrc || svgPlaceholder(600, 400);
+
+      // Xử lý giá & giảm giá (dựa theo ảnh)
+      let priceHtml = "";
+      // p.gia là giá gốc (list price), p.displayPrice là giá đã áp dụng quy tắc (sell price)
+      const originalPrice = Number(p.gia || 0);
+      const sellPrice = Number(p.displayPrice || 0);
+      let discountPercent = 0;
+
+      if (sellPrice > 0 && sellPrice < originalPrice) {
+        // Có giảm giá
+        discountPercent = Math.round(
+          ((originalPrice - sellPrice) / originalPrice) * 100
+        );
+        priceHtml = `
+          <div class="price-container">
+            <span class="sell-price">${formatVND(sellPrice)}₫</span>
+            <span class="original-price">${formatVND(originalPrice)}₫</span>
+            ${
+              discountPercent > 0
+                ? `<span class="discount-badge">-${discountPercent}%</span>`
+                : ""
+            }
+          </div>
+        `;
+      } else {
+        // Chỉ có giá bán (hoặc không có giá)
+        priceHtml = `
+          <div class="price-container">
+            <span class="sell-price">${
+              sellPrice > 0 ? formatVND(sellPrice) + "₫" : "Liên hệ"
+            }</span>
+          </div>
+        `;
+      }
+
+      // Placeholder cho thumbnails (dựa theo ảnh)
+      // Lấy 4 ảnh, nếu có p.imgSrc thì dùng, còn lại placeholder
+      const thumbnailsHtml = `
+        <div class="thumbnail-gallery">
+          <button class="thumb-item active"><img src="${img}" alt="thumb 1"></button>
+          <button class="thumb-item"><img src="${svgPlaceholder(
+            80,
+            80,
+            "Thumb 2"
+          )}" alt="thumb 2"></button>
+          <button class="thumb-item"><img src="${svgPlaceholder(
+            80,
+            80,
+            "Thumb 3"
+          )}" alt="thumb 3"></button>
+          <button class="thumb-item"><img src="${svgPlaceholder(
+            80,
+            80,
+            "Thumb 4"
+          )}" alt="thumb 4"></button>
+        </div>
+      `;
+
+      // Cập nhật breadcrumb (nếu có thể)
+      const breadcrumbEl = document.querySelector(
+        '.breadcrumb-nav li[aria-current="page"]'
+      );
+      if (breadcrumbEl) breadcrumbEl.textContent = p.ten; // Cập nhật tên SP vào breadcrumb
+
       detail.innerHTML = `
-<div class="product-info">
-<img src="${img}" alt="${p.ten}">
-<div>
-<h2>${p.ten}</h2>
-<p class="price">${formatVND(p.displayPrice)}₫</p>
-<button onclick="addToCart('${
-        p.ma
-      }')" class="btn primary">Thêm vào giỏ hàng</button>
+        <div class="product-images">
+          <img src="${img}" alt="${p.ten}" class="main-image">
+          ${thumbnailsHtml}
+        </div>
+
+        <div class="product-info-column">
+          <h1 class="product-title">${p.ten}</h1>
+          
+          <p class="price-detail">${priceHtml}</p>
+
+          <div class="action-buttons">
+              <button onclick="addToCart('${p.ma}')" class="btn-buy-now">
+               <strong>MUA NGAY</strong>
+               <span>Giao tận nơi hoặc nhận tại cửa hàng</span>
+            </button>
+
+             
+
+             <button class="btn-consult" onclick="location.href='tel:19000508'">
+              <strong>Hotline Bảo Hành</strong>
+            <span>(Gọi 1900.0525)</span>
+            </button>
 </div>
-</div>`;
+
+          <ul class="product-perks">
+            <li>✔️ Bảo hành chính hãng 24 tháng.</li>
+            <li>✔️ Hỗ trợ đổi mới trong 7 ngày.</li>
+            <li>✔️ Miễn phí giao hàng toàn quốc.</li>
+          </ul>
+
+          <div class="info-box gifts">
+            <div class="box-header">🎁 Quà tặng</div>
+            <ul>
+              <li>Đổi trả trong 3 ngày đầu tiên</li>
+            </ul>
+          </div>
+
+          <div class="info-box support">
+            <div class="box-header">🏦 Hỗ trợ</div>
+            <ul>
+              <li>Hỗ trợ trả góp 0% lãi xuất</li>
+            </ul>
+          </div>
+          
+          <div class="info-box promo">
+            <div class="box-header">🎉 Khuyến mãi</div>
+            <ul>
+              <li>Giảm ngay 100.000đ khi mua tại store cho HS/SV</li>
+            </ul>
+          </div>
+        </div>
+      `;
     } else if (detail) {
       detail.innerHTML = `<p>❌ Sản phẩm không tồn tại hoặc đã ẩn.</p>`;
     }
