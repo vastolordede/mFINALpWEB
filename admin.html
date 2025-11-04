@@ -1,0 +1,4367 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý sản phẩm</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .preview {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-top: 5px;
+        }
+
+        .hidden-product {
+            background-color: #4b5563;
+            color: #f9fafb;
+        }
+
+        .hidden-product:hover {
+            background: #4b5563 !important;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .close-btn:hover {
+            color: #000;
+        }
+
+        :root {
+            --divider: #e5e7eb;
+        }
+
+        #search-card,
+        #form-them,
+        #form-sua,
+        #form-xoa {
+            border: 1px solid var(--divider);
+        }
+
+        #product-table {
+            border: 1px solid var(--divider);
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        #product-table thead th {
+            background: #f3f4f6;
+            border-bottom: 1px solid var(--divider);
+            border-right: 1px solid var(--divider);
+            padding: 12px 14px;
+            font-weight: 600;
+        }
+
+        #product-table thead th:last-child {
+            border-right: 0;
+        }
+
+        #product-table tbody td {
+            border-bottom: 1px solid var(--divider);
+            border-right: 1px solid var(--divider);
+            padding: 12px 14px;
+            vertical-align: middle;
+        }
+
+        #product-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        #product-table tbody td:last-child {
+            border-right: 0;
+        }
+
+        #product-table tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        #product-table td button {
+            margin-right: 10px;
+        }
+
+        #product-table td button:last-child {
+            margin-right: 0;
+        }
+
+        .modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .diff-changed {
+            background: #fff7ed;
+        }
+
+        .diff-unchanged {
+            color: #6b7280;
+        }
+
+        /* ==== PRICING MODAL ==== */
+        #pricing-modal .panel {
+            width: min(1100px, 96vw);
+            max-height: 88vh;
+            overflow: hidden;
+        }
+
+        #pricing-modal header {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 1;
+        }
+
+        #pricing-modal .body {
+            overflow: auto;
+            max-height: calc(88vh - 64px);
+        }
+
+        #pricing-modal .table th,
+        #pricing-modal .table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .pricing-filer-dropdown{
+            padding-left: .75rem;
+        }
+
+        /* Đảm bảo popup đăng nhập che toàn bộ và nằm trên tất cả */
+        #login-modal.modal-mask {
+            z-index: 1000;
+            /* cao hơn mọi modal khác */
+            backdrop-filter: blur(2px);
+        }
+        #popup-detail{
+            z-index: 9999 !important;
+        }
+        /* === ORDERS FILTER → Giống INVENTORY FILTER, KHÔNG đổi HTML === */
+#orders-modal header .mt-3.grid.items-end {
+  display: flex !important;        /* thay grid bằng flex */
+  flex-wrap: wrap;
+  align-items: flex-end;            /* giống items-end */
+  gap: 0.75rem;                     /* gap-3 */
+}
+
+/* Mặc định (>= sm): input/select không full-width để giống inv-* */
+@media (min-width: 640px) {
+  #orders-modal #ord-start,
+  #orders-modal #ord-end,
+  #orders-modal #ord-status {
+    width: auto !important;         /* override w-full */
+    min-width: 14rem;               /* cảm giác ngang với inv-* */
+  }
+  #orders-modal #ord-btn-filter,
+  #orders-modal #ord-btn-clear {
+    width: auto !important;         /* nút không bị kéo full */
+  }
+}
+
+/* Mobile: giữ behavior như cũ (full-width) */
+@media (max-width: 639.98px) {
+  #orders-modal header .mt-3.grid.items-end > div {
+    flex: 1 1 100%;
+  }
+}
+
+/* Đảm bảo chiều cao & padding đồng nhất */
+#orders-modal input[type="date"],
+#orders-modal select {
+  padding: 0.5rem 0.75rem;          /* py-2 px-3 */
+  line-height: 1.25rem;
+}
+
+/* Khoảng cách giữa 2 nút giống inv-* */
+#orders-modal #ord-btn-filter,
+#orders-modal #ord-btn-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+        /* Chặn người dùng "thoát" bằng Esc khi popup login đang mở */
+        body.login-lock {
+            overflow: hidden;
+            /* tránh cuộn nền */
+            pointer-events: none;
+            /* chặn click toàn bộ nền */
+        }
+
+        body.login-lock #login-modal {
+            pointer-events: auto;
+            /* nhưng vẫn cho tương tác popup */
+        }
+
+        /* Đảm bảo khi thêm class .flex thì modal hiện ra */
+        .modal-mask.flex {
+            display: flex !important;
+        }
+
+        /* Đặt gần cuối <style> chung của trang */
+        .sel--new {
+            background: #FEF3C7;
+            color: #92400E;
+            border-color: #FCD34D;
+        }
+
+        .sel--proc {
+            background: #DCFCE7;
+            color: #166534;
+            border-color: #86EFAC;
+        }
+
+        .sel--cancel {
+            background: #FEE2E2;
+            color: #991B1B;
+            border-color: #FCA5A5;
+        }
+
+        .sel--shipped {
+            background: #a7d0f7;
+            color: #2622a3;
+            border-color: #aeaaff;
+        }
+
+        :root {
+            --white: #fff;
+            --black: #000;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --blue-500: #3b82f6;
+            --blue-600: #2563eb;
+            --blue-700: #1d4ed8;
+            --emerald-600: #059669;
+            --emerald-700: #047857;
+            --indigo-600: #4f46e5;
+            --indigo-700: #4338ca;
+            --orange-600: #ea580c;
+            --orange-700: #c2410c;
+            --fuchsia-600: #c026d3;
+            --fuchsia-700: #a21caf;
+            --teal-600: #0d9488;
+            --teal-700: #0f766e;
+            --red-600: #dc2626;
+            --red-700: #b91c1c;
+            --green-700: #15803d;
+        }
+
+        /* Layout & display */
+        .flex {
+            display: flex;
+        }
+
+        .grid {
+            display: grid;
+        }
+
+        .block {
+            display: block;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .items-end {
+            align-items: flex-end;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .justify-end {
+            justify-content: flex-end;
+        }
+
+        .justify-center {
+            justify-content: center;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .flex-row {
+            flex-direction: row;
+        }
+
+        .flex-wrap {
+            flex-wrap: wrap;
+        }
+
+        .grid-cols-1 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        /* Sizing */
+        .min-h-screen {
+            min-height: 100vh;
+        }
+
+        .h-full {
+            height: 100%;
+        }
+
+        .w-full {
+            width: 100%;
+        }
+
+        .w-auto {
+            width: auto;
+        }
+
+        .w-64 {
+            width: 16rem;
+        }
+
+        .max-w-3xl {
+            max-width: 48rem;
+        }
+
+        /* Spacing (Tailwind scale: 1 = 0.25rem) */
+        .p-2 {
+            padding: .5rem;
+        }
+
+        .p-3 {
+            padding: .75rem;
+        }
+
+        .p-4 {
+            padding: 1rem;
+        }
+
+        .p-6 {
+            padding: 1.5rem;
+        }
+
+        .py-2 {
+            padding-top: .5rem;
+            padding-bottom: .5rem;
+        }
+
+        .py-4 {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .px-3 {
+            padding-left: .75rem;
+            padding-right: .75rem;
+        }
+
+        .px-4 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .mr-2 {
+            margin-right: .5rem;
+        }
+
+        .mr-3 {
+            margin-right: .75rem;
+        }
+
+        .my-1 {
+            margin-top: .25rem;
+            margin-bottom: .25rem;
+        }
+
+        .mt-2 {
+            margin-top: .5rem;
+        }
+
+        .mt-3 {
+            margin-top: .75rem;
+        }
+
+        .mt-6 {
+            margin-top: 1.5rem;
+        }
+
+        .mt-8 {
+            margin-top: 2rem;
+        }
+
+        .mb-1 {
+            margin-bottom: .25rem;
+        }
+
+        .mb-2 {
+            margin-bottom: .5rem;
+        }
+
+        .mb-3 {
+            margin-bottom: .75rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-6 {
+            margin-bottom: 1.5rem;
+        }
+
+        .mb-8 {
+            margin-bottom: 2rem;
+        }
+
+        .gap-2 {
+            gap: .5rem;
+        }
+
+        .gap-3 {
+            gap: .75rem;
+        }
+
+        .gap-4 {
+            gap: 1rem;
+        }
+
+        /* Typography */
+        .text-left {
+            text-align: left;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-white {
+            color: var(--white);
+        }
+
+        .text-gray-800 {
+            color: var(--gray-800);
+        }
+
+        .text-gray-700 {
+            color: var(--gray-700);
+        }
+
+        .text-gray-600 {
+            color: var(--gray-600);
+        }
+
+        .text-gray-500 {
+            color: var(--gray-500);
+        }
+
+        .text-red-600 {
+            color: var(--red-600);
+        }
+
+        .text-green-700 {
+            color: var(--green-700);
+        }
+
+        .text-sm {
+            font-size: .875rem;
+            line-height: 1.25rem;
+        }
+
+        .text-xl {
+            font-size: 1.25rem;
+            line-height: 1.75rem;
+        }
+
+        .text-2xl {
+            font-size: 1.5rem;
+            line-height: 2rem;
+        }
+
+        .text-3xl {
+            font-size: 1.875rem;
+            line-height: 2.25rem;
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+
+        /* Backgrounds */
+        .bg-white {
+            background: var(--white);
+        }
+
+        .bg-gray-50 {
+            background: var(--gray-50);
+        }
+
+        .bg-gray-100 {
+            background: var(--gray-100);
+        }
+
+        .bg-gray-700 {
+            background: var(--gray-700);
+        }
+
+        .bg-gray-800 {
+            background: var(--gray-800);
+        }
+
+        .bg-blue-500 {
+            background: var(--blue-500);
+        }
+
+        .bg-blue-600 {
+            background: var(--blue-600);
+        }
+
+        .bg-blue-700 {
+            background: var(--blue-700);
+        }
+
+        .bg-emerald-600 {
+            background: var(--emerald-600);
+        }
+
+        .bg-emerald-700 {
+            background: var(--emerald-700);
+        }
+
+        .bg-indigo-600 {
+            background: var(--indigo-600);
+        }
+
+        .bg-indigo-700 {
+            background: var(--indigo-700);
+        }
+
+        .bg-slate-700 {
+            background: var(--slate-700);
+        }
+
+        .bg-slate-800 {
+            background: var(--slate-800);
+        }
+
+        .bg-orange-600 {
+            background: var(--orange-600);
+        }
+
+        .bg-orange-700 {
+            background: var(--orange-700);
+        }
+
+        .bg-fuchsia-600 {
+            background: var(--fuchsia-600);
+        }
+
+        .bg-fuchsia-700 {
+            background: var(--fuchsia-700);
+        }
+
+        .bg-teal-600 {
+            background: var(--teal-600);
+        }
+
+        .bg-teal-700 {
+            background: var(--teal-700);
+        }
+
+        /* Hover backgrounds */
+        .hover\:bg-red-700:hover {
+            background: var(--red-700);
+        }
+
+        .hover\:bg-blue-700:hover {
+            background: var(--blue-700);
+        }
+
+        .hover\:bg-emerald-700:hover {
+            background: var(--emerald-700);
+        }
+
+        .hover\:bg-indigo-700:hover {
+            background: var(--indigo-700);
+        }
+
+        .hover\:bg-slate-800:hover {
+            background: var(--slate-800);
+        }
+
+        .hover\:bg-orange-700:hover {
+            background: var(--orange-700);
+        }
+
+        .hover\:bg-fuchsia-700:hover {
+            background: var(--fuchsia-700);
+        }
+
+        .hover\:bg-teal-700:hover {
+            background: var(--teal-700);
+        }
+
+        /* Borders & radius */
+        .border {
+            border: 1px solid var(--gray-200);
+        }
+
+        .border-b {
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .border-gray-200 {
+            border-color: var(--gray-200);
+        }
+
+        .rounded {
+            border-radius: .25rem;
+        }
+
+        .rounded-lg {
+            border-radius: .5rem;
+        }
+
+        /* Effects */
+        .shadow {
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+        }
+
+        .shadow-md {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
+        }
+
+        .shadow-xl {
+            box-shadow: 0 10px 15px rgba(0, 0, 0, .15);
+        }
+
+        /* Positioning */
+        .relative {
+            position: relative;
+        }
+
+        .absolute {
+            position: absolute;
+        }
+
+        .fixed {
+            position: fixed;
+        }
+
+        .sticky {
+            position: sticky;
+        }
+
+        .top-0 {
+            top: 0;
+        }
+
+        .top-3 {
+            top: .75rem;
+        }
+
+        .right-4 {
+            right: 1rem;
+        }
+
+        .inset-0 {
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+
+        .z-10 {
+            z-index: 10;
+        }
+
+        .z-20 {
+            z-index: 20;
+        }
+
+        .z-50 {
+            z-index: 50;
+        }
+
+        /* Overflow & tables */
+        .overflow-auto {
+            overflow: auto;
+        }
+
+        .overflow-x-auto {
+            overflow-x: auto;
+        }
+
+        /* Transforms (cho sidebar) */
+        .-translate-x-full {
+            transform: translateX(-100%);
+        }
+
+        .translate-x-0 {
+            transform: translateX(0);
+        }
+
+        /* Width helpers used trong form & button */
+        .w-96 {
+            width: 24rem;
+        }
+
+        /* Max-height (confirm diff) */
+        .max-h-80 {
+            max-height: 20rem;
+        }
+        .text-CTH{
+            color: red;
+        }
+        .bg-yellow-500 {
+            background-color: rgb(255, 200, 1);
+        }
+        /* Responsive breakpoints */
+        @media (min-width:640px) {
+
+            /* sm: */
+            .sm\:flex {
+                display: flex;
+            }
+
+            .sm\:flex-row {
+                flex-direction: row;
+            }
+
+            .sm\:grid-cols-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .sm\:col-span-2 {
+                grid-column: span 2 / span 2;
+            }
+
+            .sm\:w-auto {
+                width: auto;
+            }
+
+            .sm\:w-96 {
+                width: 24rem;
+            }
+
+            .sm\:block {
+                display: block !important;
+            }
+        }
+
+        @media (min-width:1024px) {
+
+            /* lg: */
+            .lg\:hidden {
+                display: none !important;
+            }
+
+            .lg\:relative {
+                position: relative;
+            }
+
+            .lg\:translate-x-0 {
+                transform: translateX(0);
+            }
+
+            .lg\:p-10 {
+                padding: 2.5rem;
+            }
+        }
+
+        /* Rounded button pills seen in sidebar */
+        .rounded-lg {
+            border-radius: .5rem;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside
+            class="sidebar w-64 bg-gray-800 text-white p-4 fixed lg:relative h-full -translate-x-full lg:translate-x-0 z-20">
+            <div class="text-2xl font-bold mb-8">Admin Panel</div>
+            <nav>
+                <a href="admin_products.html" class="text-white flex items-center p-3 my-1 bg-gray-700 rounded-lg">
+                    <i class="fas fa-box mr-3"></i>Quản lý sản phẩm
+                </a>
+                <a href="#" onclick="return forceLogout();"
+                    class="text-white flex items-center p-3 mt-8 hover:bg-red-700 rounded-lg">
+                    <i class="fas fa-sign-out-alt mr-3"></i>Đăng xuất
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 lg:p-10">
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">Quản lý sản phẩm</h1>
+                <button id="menu-button" class="lg:hidden text-gray-700"><i class="fas fa-bars fa-2x"></i></button>
+            </div>
+
+            <!-- Tìm kiếm + Thêm + Giá bán -->
+            <div id="search-card" class="bg-white p-6 rounded-lg shadow-md mb-6">
+                <div class="sm:flex justify-between mb-4 gap-3">
+                    <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="Tìm tên sản phẩm..." class="border rounded p-2"
+                                id="search-name">
+                            <select class="border rounded p-2" id="search-type">
+                                <option value="">Danh Mục</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="showForm('them')"
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">Thêm
+                            sản phẩm mới</button>
+                        <button onclick="openPricingModal()"
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
+                            <i class="fas fa-dollar-sign mr-2"></i>Quản lý giá bán
+                        </button>
+                        <button onclick="openCategoriesModal()"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
+                            <i class="fas fa-tags mr-2"></i>Quản lý loại SP
+                        </button>
+                        <button onclick="INV_openInventoryModal()"
+                            class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
+                            <i class="fas fa-warehouse mr-2"></i>Quản lý tồn kho
+                        </button>
+                        <button onclick="ORD_openOrdersModal()"
+                            class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
+                            <i class="fas fa-shopping-cart mr-2"></i>Quản lý đơn hàng
+                        </button>
+                        <button onclick="USR_openUsersModal()"
+                            class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
+                            <i class="fas fa-users mr-2"></i>Quản lý người dùng
+                        </button>
+
+
+                        <!-- ===================== A) THÊM NÚT MỞ POPUP NHẬP HÀNG =====================
+
+
+Dán nút dưới đây cạnh 2 nút "Quản lý giá bán" và "Quản lý loại SP" trong phần
+Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn thêm 1 nút. -->
+
+
+                        <button onclick="openInvoicesModal()"
+                            class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
+                            <i class="fas fa-truck-loading mr-2"></i>Quản lý nhập hàng
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Table -->
+            <div class="overflow-x-auto mb-6">
+                <table class="w-full text-left" id="product-table">
+                    <thead>
+                        <tr>
+                            <th>Mã SP</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Chi tiết</th>
+                            <th>Loại</th>
+                            <th>Giá bán</th>
+                            <th>Nguồn</th>
+                            <th>Số lượng</th>
+                            <th>Hình ảnh</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="product-list"></tbody>
+                </table>
+            </div>
+
+            <!-- FORM THÊM (Modal) -->
+            <div id="form-them" class="hidden modal-mask">
+                <div class="modal-content">
+                    <span class="close-btn" onclick="closeForm('them')">&times;</span>
+                    <h2 class="text-xl font-bold mb-3">Thêm sản phẩm</h2>
+                    <div class="flex flex-col space-y-2">
+                        <input type="text" id="masp" placeholder="Mã sản phẩm" class="border p-2 rounded">
+                        <input type="text" id="tensp" placeholder="Tên sản phẩm" class="border p-2 rounded">
+                       <button onclick="openDetailPopup()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
+    Thêm Chi Tiết
+</button>
+
+                        <select id="loai" class="border p-2 rounded"></select>
+
+                        <input disabled type="text" id="gia" placeholder="Giá (VND)" class="border p-2 rounded">
+                        <input type="text" id="nguon" placeholder="Nguồn (Nơi nhập)" class="border p-2 rounded">
+                        <input disabled type="number" id="soluong" placeholder="Số lượng ban đầu"
+                            class="border p-2 rounded" min="0" step="1">
+                        <input type="file" id="anh-them" accept="image/*" onchange="previewImage(event,'preview-them')"
+                            class="border p-2 rounded">
+                        <img id="preview-them" class="preview" />
+                        <button onclick="addProduct()"
+                            class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Thêm</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Popup thêm chi tiết -->
+<div id="popup-detail" class="hidden modal-mask">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeDetailPopup()">×</span>
+        <h2 class="text-xl font-bold mb-3">Thêm Chi Tiết Sản Phẩm</h2>
+        <div id="details-container" class="space-y-3">
+            <!-- Input sẽ được thêm ở đây -->
+        </div>
+        <button onclick="addDetailField()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Thêm Chi Tiết
+        </button>
+        <button onclick="saveDetails()" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-4">
+            Lưu Chi Tiết
+        </button>
+    </div>
+</div>
+
+            <!-- FORM SỬA (Modal) -->
+            <div id="form-sua" class="hidden modal-mask">
+                <div class="modal-content">
+                    <span class="close-btn" onclick="closeForm('sua')">&times;</span>
+                    <h2 class="text-xl font-bold mb-3">Sửa sản phẩm</h2>
+                    <div class="flex flex-col space-y-2">
+                        <input disabled type="text" id="masp-sua" placeholder="Mã SP" class="border p-2 rounded">
+                        <input type="text" id="tensp-sua" placeholder="Tên SP" class="border p-2 rounded">
+                        <select id="loai-sua" class="border p-2 rounded"></select>
+
+                        <button type="button" onclick="openDetailPopup('edit')"
+  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
+  Sửa Chi Tiết
+</button>
+                        <input type="text" id="gia-sua" placeholder="Giá (VND)" class="border p-2 rounded">
+                        <input type="text" id="nguon-sua" placeholder="Nguồn (Nơi nhập)" class="border p-2 rounded">
+                        <input type="file" id="anh-sua" accept="image/*" onchange="previewImage(event,'preview-sua')"
+                            class="border p-2 rounded">
+                        <img id="preview-sua" class="preview" />
+                        <button onclick="editProduct()"
+                            class="bg-yellow-500 hover:bg-yellow-700 text-white py-2 px-4 rounded">Cập nhật</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORM XÓA -->
+            <div id="form-xoa" class="hidden bg-white p-6 rounded shadow mb-6">
+                <h2 class="text-xl font-bold mb-3">Xóa sản phẩm</h2>
+                <div class="flex flex-col space-y-2">
+                    <input type="text" id="masp-xoa" placeholder="Mã SP cần xóa" class="border p-2 rounded">
+                    <button onclick="deleteProduct()"
+                        class="bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded">Xóa</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL XÁC NHẬN CẬP NHẬT -->
+    <div id="confirm-modal" class="fixed inset-0 modal-mask hidden items-center justify-center z-50">
+        <div class="bg-white w-full max-w-3xl rounded-lg shadow-xl p-6 relative">
+            <button class="absolute top-3 right-4 text-gray-500 text-xl" onclick="closeConfirm()">×</button>
+            <h3 class="text-xl font-semibold mb-1">Xác nhận cập nhật sản phẩm</h3>
+            <p class="text-sm text-gray-600 mb-4">Vui lòng kiểm tra các thay đổi bên dưới trước khi lưu.</p>
+
+            <div class="max-h-80 overflow-auto">
+                <table class="w-full text-sm border border-gray-200 rounded">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="text-left p-2 border-b border-gray-200 w-40">Trường</th>
+                            <th class="text-left p-2 border-b border-gray-200">Trước</th>
+                            <th class="text-left p-2 border-b border-gray-200">Sau</th>
+                        </tr>
+                    </thead>
+                    <tbody id="diff-tbody"></tbody>
+                </table>
+
+                <div id="diff-images" class="grid grid-cols-2 gap-4 mt-4 hidden">
+                    <div>
+                        <div class="text-sm font-medium mb-2">Ảnh trước</div>
+                        <img id="diff-img-old" class="w-full max-h-64 object-contain border rounded">
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium mb-2">Ảnh sau</div>
+                        <img id="diff-img-new" class="w-full max-h-64 object-contain border rounded">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button onclick="closeConfirm()" class="px-4 py-2 rounded border border-gray-300">Hủy</button>
+                <button onclick="confirmApply()" class="px-4 py-2 rounded bg-blue-600 text-white">Xác nhận &
+                    lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PRICING POPUP (GỘP VÀO TRANG NÀY) ===== -->
+    <div id="pricing-modal" class="modal-mask hidden items-center justify-center">
+        <div class="panel bg-white rounded-lg shadow-xl p-4 relative w-full">
+            <span class="close-btn" onclick="closePricingModal()">&times;</span>
+            <header class="pb-3 border-b">
+                <h2 class="text-2xl font-bold">Quản lý giá bán</h2>
+                <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input id="pricing-search" type="text" placeholder="Tìm theo mã/tên sản phẩm..."
+                        class="border rounded p-2 w-full">
+                    <label class="flex items-center gap-2">
+                        <span class="text-sm pricing-filer-dropdown">Loại:</span>
+                        <select id="pricing-filter-type" class="border rounded p-2 w-full">
+                            <option value="">Tất cả</option>
+                        </select>
+                    </label>
+                    
+                </div>
+            </header>
+
+            <div class="body mt-3">
+                <div class="overflow-x-auto">
+                    <table class="table w-full text-left">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th>Mã SP</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Loại</th>
+                                <th>Giá vốn</th>
+                                <th>% Lợi nhuận</th>
+                                <th>Giá bán</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricing-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ===== CATEGORIES POPUP (GỘP VÀO TRANG NÀY) ===== -->
+    <div id="categories-modal" class="modal-mask hidden items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-4 relative w-full"
+            style="width:min(1100px,96vw);max-height:88vh;overflow:hidden">
+            <span class="close-btn" onclick="closeCategoriesModal()">&times;</span>
+
+            <header class="pb-3 border-b">
+                <h2 class="text-2xl font-bold">Quản lý loại sản phẩm</h2>
+
+            </header>
+
+            <div class="mt-3">
+                <div class="bg-white p-4 rounded-lg">
+                    <div class="flex justify-end mb-4">
+                        <button onclick="CAT_showFormCategories('them')"
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Thêm loại mới
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left" id="category-table-categories">
+                            <thead>
+                                <tr class="bg-gray-200">
+                                    <th class="p-3">Mã loại</th>
+                                    <th class="p-3">Tên loại sản phẩm</th>
+                                    <th class="p-3">Trạng thái</th>
+                                    <th class="p-3">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="category-list-categories"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Thêm loại (popup con) -->
+            <div id="form-them-categories" class="hidden modal-mask items-center justify-center" style="z-index:60;">
+                <div class="modal-content" style="max-width:500px;width:100%;position:relative">
+                    <span class="close-btn" onclick="CAT_closeFormCategories('them')">&times;</span>
+                    <h2 class="text-xl font-bold mb-3">Thêm loại sản phẩm</h2>
+                    <div class="flex flex-col space-y-2">
+                        <input type="text" id="maloai-categories" placeholder="Mã loại (Tự động)"
+                            class="border p-2 rounded" disabled>
+                        <input type="text" id="tenloai-categories" placeholder="Tên loại sản phẩm"
+                            class="border p-2 rounded">
+                        <button onclick="CAT_addCategory()"
+                            class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Thêm</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal: Sửa loại (popup con) -->
+            <div id="form-sua-categories" class="hidden modal-mask items-center justify-center" style="z-index:60;">
+                <div class="modal-content" style="max-width:500px;width:100%;position:relative">
+                    <span class="close-btn" onclick="CAT_closeFormCategories('sua')">&times;</span>
+                    <h2 class="text-xl font-bold mb-3">Sửa loại sản phẩm</h2>
+                    <div class="flex flex-col space-y-2">
+                        <input type="text" id="maloai-sua-categories" placeholder="Mã loại" class="border p-2 rounded"
+                            disabled>
+                        <input type="text" id="tenloai-sua-categories" placeholder="Tên loại sản phẩm"
+                            class="border p-2 rounded">
+                        <button onclick="CAT_updateCategory()"
+                            class="bg-yellow-500 hover:bg-yellow-700 text-white py-2 px-4 rounded">Cập nhật</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- Modal: Danh sách phiếu nhập -->
+    <div id="invoices-modal" class="modal-mask hidden items-center justify-center" style="z-index:60;">
+        <div class="modal-content" style="max-width:960px;width:100%;position:relative">
+            <span class="close-btn" onclick="closeInvoicesModal()">&times;</span>
+            <h2 class="text-xl font-bold mb-3">Quản lý nhập hàng</h2>
+
+            <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm">Từ:</label>
+                    <input type="date" id="invoices-start-date" class="border rounded p-2">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-sm">Đến:</label>
+                    <input type="date" id="invoices-end-date" class="border rounded p-2">
+                </div>
+                <div class="flex-1"></div>
+                <button onclick="Invoices_openCreateModal()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    + Tạo phiếu nhập
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left" id="invoices-table">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-2">Mã phiếu</th>
+                            <th class="p-2">Ngày</th>
+                            <th class="p-2">Tổng tiền</th>
+                            <th class="p-2">Trạng thái</th>
+                            <th class="p-2">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoices-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Tạo phiếu nhập -->
+    <div id="invoices-create-modal" class="modal-mask hidden items-center justify-center" style="z-index:60;">
+        <div class="modal-content" style="max-width:500px;width:100%;position:relative">
+            <span class="close-btn" onclick="Invoices_closeCreateModal()">&times;</span>
+            <h2 class="text-xl font-bold mb-3">Tạo phiếu nhập</h2>
+            <form id="invoices-create-form" class="flex flex-col gap-2">
+                <label>Tên sản phẩm</label>
+                <select id="invoices-product-name" class="border rounded p-2" required>
+                    <option value="">— Chọn sản phẩm —</option>
+                </select>
+
+                <label>Số lượng</label>
+                <input type="number" id="invoices-product-qty" class="border rounded p-2" min="1" step="1" value="1"
+                    required>
+
+                <label>Đơn giá (VNĐ)</label>
+                <input type="text" id="invoices-product-price" class="border rounded p-2" placeholder="Ví dụ: 2.500.000"
+                    required>
+
+                <div class="text-right text-sm text-gray-600">
+                    Tổng tiền: <span id="invoices-total-preview">0 VNĐ</span>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-2">
+                    <button type="button" class="px-4 py-2 rounded border"
+                        onclick="Invoices_closeCreateModal()">Hủy</button>
+                    <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Tạo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+    <!-- Modal: Sửa phiếu nhập -->
+    <div id="invoices-edit-modal" class="modal-mask hidden items-center justify-center" style="z-index:60;">
+        <div class="modal-content" style="max-width:500px;width:100%;position:relative">
+            <span class="close-btn" onclick="Invoices_closeEditModal()">&times;</span>
+            <h2 class="text-xl font-bold mb-3">Sửa phiếu nhập</h2>
+            <form id="invoices-edit-form" class="flex flex-col gap-2">
+                <label>Mã phiếu</label>
+                <input type="text" id="invoices-edit-id" class="border rounded p-2" readonly>
+
+
+                <label>Tên sản phẩm</label>
+                <select id="invoices-edit-name" class="border rounded p-2" min="1" step="1" value="1" required>
+                    <option value="">— Chọn sản phẩm —</option>
+                </select>
+
+
+                <label>Số lượng</label>
+                <input type="number" id="invoices-edit-qty" class="border rounded p-2" required>
+
+
+                <label>Đơn giá (VNĐ)</label>
+                <input type="text" id="invoices-edit-price" class="border rounded p-2" required>
+
+
+                <div class="text-right text-sm text-gray-600">Tổng tiền: <span id="invoices-edit-total">0 VNĐ</span>
+                </div>
+
+
+                <div class="flex justify-end gap-2 mt-2">
+                    <button type="button" class="px-4 py-2 rounded border"
+                        onclick="Invoices_closeEditModal()">Hủy</button>
+                    <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Modal: Chi tiết phiếu nhập -->
+    <div id="invoices-detail-modal" class="modal-mask hidden items-center justify-center" style="z-index:60;">
+        <div class="modal-content" style="max-width:600px;width:100%;position:relative">
+            <span class="close-btn" onclick="Invoices_closeDetailModal()">&times;</span>
+            <h2 class="text-xl font-bold mb-3">Chi tiết phiếu nhập</h2>
+            <table class="w-full text-left mb-3" id="invoices-detail-table">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-2">Sản phẩm</th>
+                        <th class="p-2">Đơn giá</th>
+                        <th class="p-2">Số lượng</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div class="text-right font-semibold">Tổng tiền: <span id="invoices-detail-total">0 VNĐ</span></div>
+        </div>
+    </div>
+    <!-- ===== INVENTORY POPUP (GỘP VÀO TRANG NÀY) ===== -->
+    <div id="inventory-modal" class="modal-mask hidden items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-4 relative w-full"
+            style="width:min(1100px,96vw);max-height:88vh;overflow:hidden">
+            <span class="close-btn" onclick="INV_closeInventoryModal()">&times;</span>
+
+            <header class="pb-3 border-b bg-white sticky top-0 z-10">
+                <h2 class="text-2xl font-bold">Quản lý tồn kho</h2>
+
+                <!-- Bộ lọc -->
+                <div class="mt-3 flex flex-wrap items-end gap-3">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1" for="inv-from-date">Từ ngày</label>
+                        <input id="inv-from-date" type="date" class="border rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1" for="inv-to-date">Đến ngày</label>
+                        <input id="inv-to-date" type="date" class="border rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1" for="inv-filter-type">Lọc theo loại</label>
+                        <select id="inv-filter-type" class="border rounded px-3 py-2">
+                            <option value="">Tất cả loại</option>
+                        </select>
+                    </div>
+
+                    <button id="inv-btn-filter"
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Lọc</button>
+                    <button id="inv-btn-last30" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">30
+                        ngày gần nhất</button>
+                </div>
+            </header>
+
+            <div class="mt-3 overflow-auto" style="max-height:calc(88vh - 120px)">
+                <table id="inv-product-table" class="w-full text-left"
+                    style="border-collapse:separate;border-spacing:0">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-3 border-b">Mã SP</th>
+                            <th class="p-3 border-b">Tên sản phẩm</th>
+                            <th class="p-3 border-b">Loại</th>
+                            <th class="p-3 border-b">Tồn kho</th>
+                            <th class="p-3 border-b">Tình trạng</th>
+                            <th class="p-3 border-b">Nhập - Xuất (lọc)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inv-product-list"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- ===== ORDERS POPUP (GỘP VÀO TRANG NÀY) ===== -->
+    <div id="orders-modal" class="modal-mask hidden items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-4 relative w-full"
+            style="width:min(1100px,96vw);max-height:88vh;overflow:hidden">
+            <span class="close-btn" onclick="ORD_closeOrdersModal()">&times;</span>
+
+            <header class="pb-3 border-b bg-white sticky top-0 z-10">
+                <h2 class="text-2xl font-bold">Quản lý đơn hàng</h2>
+
+                <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1" for="ord-start">Từ ngày</label>
+                        <input id="ord-start" type="date" class="border rounded px-3 py-2 w-full">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1" for="ord-end">Đến ngày</label>
+                        <input id="ord-end" type="date" class="border rounded px-3 py-2 w-full">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1" for="ord-status">Tình trạng</label>
+                        <select id="ord-status" class="border rounded px-3 py-2 w-full">
+                            <option value="">Tất cả</option>
+                            <option value="Mới đặt">Mới đặt</option>
+                            <option value="Đã xử lý">Đã xử lý</option>
+                            <option value="Đã hủy">Đã hủy</option>
+                            <option value="Đã giao">Đã giao</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2 lg:col-span-2 flex gap-2">
+                        <button id="ord-btn-filter"
+                            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full sm:w-auto">Lọc</button>
+                        <button id="ord-btn-clear"
+                            class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 w-full sm:w-auto">Xóa
+                            lọc</button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="mt-3 overflow-auto" style="max-height:calc(88vh - 140px)">
+                <table class="w-full text-left" style="border-collapse:separate;border-spacing:0">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-3 border-b">Mã ĐH</th>
+                            <th class="p-3 border-b">Khách hàng</th>
+                            <th class="p-3 border-b">Ngày đặt</th>
+                            <th class="p-3 border-b">Tổng tiền</th>
+                            <th class="p-3 border-b">Tình trạng</th>
+                            <th class="p-3 border-b">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ord-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Chi tiết đơn hàng -->
+    <div id="orders-detail-modal" class="modal-mask hidden items-center justify-center" style="z-index:60;">
+        <div class="modal-content" style="max-width:700px;width:100%;position:relative">
+            <span class="close-btn" onclick="ORD_closeDetail()">×</span>
+            <h2 class="text-xl font-bold mb-3">Chi tiết đơn hàng</h2>
+            <div id="ord-detail-box" class="text-sm"></div>
+        </div>
+    </div>
+    <div id="login-modal" class="modal-mask hidden items-center justify-center">
+        <div class="modal-content" style="max-width:380px;width:100%;position:relative">
+            <!-- KHÔNG có nút đóng -->
+            <h2 class="text-xl font-bold mb-3 text-center">Đăng nhập Admin</h2>
+            <form id="login-form" class="flex flex-col gap-3">
+                <div class="flex flex-col gap-1">
+                    <label for="login-user" class="text-sm text-gray-600">Tài khoản</label>
+                    <input id="login-user" type="text" class="border p-2 rounded" placeholder="admin"
+                        autocomplete="username" required>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label for="login-pass" class="text-sm text-gray-600">Mật khẩu</label>
+                    <input id="login-pass" type="password" class="border p-2 rounded" placeholder="••••••"
+                        autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Đăng nhập
+                </button>
+                <div id="login-error" class="text-sm text-red-600 hidden">Sai tài khoản hoặc mật khẩu.</div>
+            </form>
+        </div>
+    </div>
+    <!-- ===== USERS POPUP (GỘP VÀO TRANG NÀY) ===== -->
+    <div id="users-modal" class="modal-mask hidden items-center justify-center" style="z-index:60;">
+        <div class="bg-white rounded-lg shadow-xl p-4 relative w-full"
+            style="width:min(1100px,96vw);max-height:88vh;overflow:hidden">
+            <span class="close-btn" onclick="USR_closeUsersModal()">&times;</span> 
+
+            <header class="pb-3 border-b bg-white sticky top-0 z-10">
+                <h2 class="text-2xl font-bold">Quản lý người dùng</h2>
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                    <input id="usr-search" type="text" placeholder="Tìm kiếm khách hàng..."
+                        class="border rounded px-3 py-2 w-full sm:w-96">
+                    <div id="usr-flash" class="text-sm text-green-700"></div>
+                </div>
+            </header>
+
+            <div class="mt-3 overflow-auto" style="max-height:calc(88vh - 140px)">
+                <table class="w-full text-left" style="border-collapse:separate;border-spacing:0">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-3 border-b">ID</th>
+                            <th class="p-3 border-b">Tên khách hàng</th>
+                            <th class="p-3 border-b">Username</th>
+                            <th class="p-3 border-b">Email</th>
+                            <th class="p-3 border-b">Ngày đăng ký</th>
+                            <th class="p-3 border-b">Đơn đã mua</th>
+                            <th class="p-3 border-b">Trạng thái</th>
+                            <th class="p-3 border-b">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usr-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+
+        // Helper truy cập nhanh theo id
+        const q = (id) => document.getElementById(id);
+        // Lấy thông tin khách từ nhiều nguồn để tương thích
+        function ORD_pickCustomer(o) {
+            return {
+                name: o?.shipping?.receiverName || o?.customerRef?.name || o?.customer?.name || '',
+                phone: o?.shipping?.phone || o?.customer?.phone || '',
+                address: o?.shipping?.address || o?.customer?.address || ''
+            };
+        }
+
+        // Hàm kiểm tra giá âm
+function checkNegativePrice(inputValue) {
+    const price = Number(inputValue); // Chuyển giá trị nhập vào thành số
+
+    // Kiểm tra nếu giá trị là một số và là số âm
+    if (isNaN(price) || price < 0) {
+        alert("Vui lòng nhập giá đúng (giá không thể âm).");
+        return false; // Trả về false nếu giá không hợp lệ
+    }
+
+    return true; // Trả về true nếu giá hợp lệ
+}
+
+// Sử dụng hàm trong sự kiện nhập liệu (ví dụ: khi người dùng nhập giá vào input)
+document.getElementById('invoices-product-price').addEventListener('blur', function() {
+    const inputValue = this.value; // Lấy giá trị từ input
+    checkNegativePrice(inputValue); // Kiểm tra giá trị nhập vào
+});
+
+
+        // ============= UI cơ bản =============
+        const menuButton = document.getElementById('menu-button');
+        const sidebar = document.querySelector('.sidebar');
+        if (menuButton && sidebar) menuButton.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+
+        (function setActiveNav() {
+            const links = document.querySelectorAll('.sidebar nav a');
+            let current = location.pathname.split('/').pop();
+            if (!current || current === '') current = 'index.html';
+            links.forEach(a => {
+                a.classList.remove('bg-gray-700');
+                const normalized = (a.getAttribute('href') || '').split('/').pop();
+                if (normalized === current) a.classList.add('bg-gray-700');
+            });
+        })();
+
+        // ============= Helpers chung =============
+        const productList = document.getElementById("product-list");
+        const searchType = document.getElementById("search-type");
+        const searchNameInput = document.getElementById('search-name');
+
+        function normalizeType(str) { return (str || '').trim().toLowerCase(); }
+        function capitalizeWords(str) {
+            return (str || '').trim().split(/\s+/).map(w => w[0]?.toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        }
+        function previewImage(event, previewId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => document.getElementById(previewId).src = e.target.result;
+            reader.readAsDataURL(file);
+        }
+
+        function onlyDigitsToNumber(str) {
+            return Number(String(str || '').replace(/[^\d]/g, '')) || 0;
+        }
+        function formatVND(x) {
+            const n = onlyDigitsToNumber(x);
+            return n.toLocaleString('vi-VN');
+        }
+
+        // ===== inventory (để hiển thị tồn kho) =====
+        const LS_INVENTORY_KEY = 'inventory';
+        function lsGetInventory() {
+            try { return JSON.parse(localStorage.getItem(LS_INVENTORY_KEY) || '[]'); }
+            catch (e) { return []; }
+        }
+
+        // ===== Lấy pricing_data (sellPrice) =====
+        const LS_PRICING_DATA = 'pricing_data';
+        (function () {
+            let t = null;
+            const refresh = () => { clearTimeout(t); t = setTimeout(() => { try { renderFromStore(); } catch (e) { } }, 80); };
+            window.addEventListener('pricing_data_changed', refresh);
+            window.addEventListener('storage', (e) => { if (e.key === LS_PRICING_DATA) refresh(); });
+        })();
+
+        function getPricingRows() {
+            try {
+                const raw = localStorage.getItem(LS_PRICING_DATA);
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                if (parsed && Array.isArray(parsed.rows)) return parsed.rows;
+                if (Array.isArray(parsed)) return parsed;
+                if (parsed && typeof parsed === 'object' && parsed.ma) return [parsed];
+                return [];
+            } catch (e) { return []; }
+        }
+
+        function getSellPriceByMa(ma) {
+            const rows = getPricingRows();
+            const found = rows.find(r => (r.ma || '') === (ma || ''));
+            return Number(found?.sellPrice) || 0;
+        }
+
+        // ============= LocalStorage Layer (admin_products) =============
+        const LS_KEY = 'admin_products';
+
+        // ===== USERS LAYER cho Orders =====
+const LS_USERS_KEY_PRIMARY = 'admin_users';
+const LS_USERS_KEY_FALLBACK = 'users'; // phòng khi bạn dùng key khác
+
+// Cache nhẹ để tránh parse nhiều lần
+let ORD___usersCache = null;
+
+// Trả về MẢNG users từ localStorage
+function ORD_getUsers(force = false) {
+  if (!force && Array.isArray(ORD___usersCache)) return ORD___usersCache;
+
+  // thử key chính -> fallback sang key phụ
+  let raw = localStorage.getItem(LS_USERS_KEY_PRIMARY);
+  if (!raw) raw = localStorage.getItem(LS_USERS_KEY_FALLBACK);
+
+  try {
+    const parsed = raw ? JSON.parse(raw) : [];
+    // nếu là object kiểu {id1:{}, id2:{}} thì convert sang mảng
+    const arr = Array.isArray(parsed) ? parsed
+              : (parsed && typeof parsed === 'object') ? Object.values(parsed)
+              : [];
+    ORD___usersCache = arr;
+    return arr;
+  } catch (e) {
+    ORD___usersCache = [];
+    return [];
+  }
+}
+
+// Map tra cứu nhanh theo id/email/phone/username
+function ORD_getUserMap() {
+  const norm = s => String(s || '').trim().toLowerCase();
+  const map = new Map();
+  ORD_getUsers().forEach(u => {
+    const keys = [
+      u.id, u.userId, u.ma, u.code, u.username,
+      u.email, u.phone, u.sdt, u.tel
+    ].filter(Boolean);
+    keys.forEach(k => map.set(norm(k), u));
+  });
+  return map;
+}
+
+// Tìm user theo nhiều kiểu khoá (id/email/phone/username)
+function ORD_resolveUser(ref) {
+  const norm = s => String(s || '').trim().toLowerCase();
+  const m = ORD_getUserMap();
+  return m.get(norm(ref)) || null;
+}
+
+// Nếu dữ liệu users thay đổi ở tab khác thì làm mới cache
+window.addEventListener('storage', (e) => {
+  if (e.key === LS_USERS_KEY_PRIMARY || e.key === LS_USERS_KEY_FALLBACK) {
+    ORD___usersCache = null;
+  }
+});
+
+// Expose để các nơi khác dùng chung (và để tránh lỗi undefined)
+if (typeof window.ORD_getUsers !== 'function') window.ORD_getUsers = ORD_getUsers;
+if (typeof window.ORD_getUserMap !== 'function') window.ORD_getUserMap = ORD_getUserMap;
+if (typeof window.ORD_resolveUser !== 'function') window.ORD_resolveUser = ORD_resolveUser;
+
+        function lsGetAll() {
+            try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); }
+            catch (e) { return []; }
+        }
+        function lsSaveAll(arr) {
+            localStorage.setItem(LS_KEY, JSON.stringify(arr || []));
+        }
+        function lsFindByMa(ma) {
+            const all = lsGetAll();
+            const idx = all.findIndex(p => (p.ma || '').toLowerCase() === (ma || '').toLowerCase());
+            return { idx, all };
+        }
+
+        // ============= Render Store -> Bảng =============
+        function renderFromStore() {
+            const items = lsGetAll();
+            // map all-time cho tồn kho
+            const aggAll = (typeof INV_aggregateInOutByCodeInRange === 'function')
+                ? INV_aggregateInOutByCodeInRange(null, null) : null;
+
+            while (productList.firstChild) productList.removeChild(productList.firstChild);
+
+            for (const p of items) {
+                const row = productList.insertRow();
+                const chitietText = Array.isArray(p.chitiet) ? p.chitiet.join(', ') : (p.chitiet || '');
+                row.dataset.hidden = String(!!p.hidden);
+                if (p.hidden) row.classList.add('hidden-product');
+
+                let tonKho = 0;
+                if (aggAll) {
+                    const key = (String(p.ma || '').trim()) || (p.ten || '').trim().toLowerCase();
+                    const a = aggAll.get(key) || { in: 0, out: 0 };
+                    tonKho = Math.max(0, a.in - a.out);
+                } else {
+                    // fallback: dùng store (đã là all-time sau bước 2)
+                    const invItem = lsGetInventory().find(inv =>
+                        String(inv.ma || '').toLowerCase() === String(p.ma || '').toLowerCase()
+                    );
+                    tonKho = Number(invItem?.tonKho ?? 0);
+                }
+
+                const sellPrice = getSellPriceByMa(p.ma) || 0;
+
+                row.insertCell(0).innerText = p.ma || '';
+                row.insertCell(1).innerText = p.ten || '';
+                row.insertCell(2).innerText = chitietText; 
+                row.insertCell(3).innerText = p.loai || '';
+                row.insertCell(4).innerText = formatVND(sellPrice);
+                row.insertCell(5).innerText = p.nguon || '';
+                row.insertCell(6).innerText = tonKho;
+
+                const imgCell = row.insertCell(7);
+                const img = document.createElement('img'); img.width = 60; img.alt = '';
+                if (p.imgSrc) img.src = p.imgSrc; imgCell.appendChild(img);
+
+                const actionCell = row.insertCell(8);
+                actionCell.innerHTML = `
+      <button onclick="populateEdit('${p.ma}')" class="text-yellow-500 hover:text-yellow-700" title="Sửa"><i class="fas fa-edit"></i></button>
+      <button onclick="deleteProductWithConfirm('${p.ma}')" class="text-red-500 hover:text-red-700" title="Xóa"><i class="fas fa-trash"></i></button>
+      <button onclick="toggleHide(this, '${p.ma}')" class="text-gray-700 hover:text-black" title="Ẩn/Hiện">${p.hidden ? 'Bỏ ẩn' : 'Ẩn'}</button>
+    `;
+            }
+
+            rebuildCategories();
+            filterProducts();
+        }
+
+        function rebuildCategories() {
+  while (searchType.options.length > 1) searchType.remove(1);
+
+  const visibleNames = CAT_getVisibleCategoryNames(); // chỉ lấy Hiển thị
+  visibleNames.forEach(text => {
+    const opt = document.createElement('option');
+    opt.value = text;
+    opt.text = text;
+    searchType.appendChild(opt);
+  });
+}
+
+        function isDuplicateProduct(ma, ten, chitiet, loai, ignoreMa = false) {
+            const norm = v => String(v || '').trim().toLowerCase();
+            ma = normalizeType(ma);
+            ten = normalizeType(ten);
+            const chitietKey = Array.isArray(chitiet) ? chitiet.map(norm).join('|') : norm(chitiet);
+            loai = normalizeType(loai);
+            for (let row of productList.rows) {
+                const rMa = normalizeType(row.cells[0].innerText);
+                const rTen = normalizeType(row.cells[1].innerText);
+                const rChitiet = normalizeType(row.cells[2].innerText);
+                const rLoai = normalizeType(row.cells[3].innerText);
+                if (ignoreMa && rMa === ma) continue;
+                const rChitietKey = rChitiet.split(',').map(s => norm(s)).filter(Boolean).join('|');
+                if (rMa === ma && rTen === ten && rChitietKey === chitietKey && rLoai === loai) return true;
+            }
+            return false;
+        }
+        // === Helper: tìm SP theo mã hoặc tên (từ admin_products) ===
+        function Invoices_resolveProductRef(input) {
+            const needle = String(input || '').trim().toLowerCase();
+            const products = lsGetAll(); // <- CHÍNH LÀ admin_products (dùng LS_KEY='admin_products' ở trên)
+            return products.find(p =>
+                String(p.ma || '').trim().toLowerCase() === needle ||
+                String(p.ten || '').trim().toLowerCase() === needle
+            ) || null;
+        }
+
+// ============ STATE cho popup chi tiết ============
+let detailPopupMode = 'add';         // 'add' | 'edit'
+let pendingDetailsAdd = [];          // stash khi thêm mới
+let pendingDetailsEdit = null;       // stash khi sửa (null = chưa thay đổi)
+let detailCount = 0;
+const maxDetails = 4;
+
+// Tiện ích: chuẩn hóa mảng chi tiết
+function _toDetailArray(any) {
+  if (Array.isArray(any)) return any.filter(Boolean).map(s => String(s).trim()).filter(Boolean);
+  if (any == null) return [];
+  // nếu là chuỗi: tách theo dấu phẩy
+  return String(any).split(',').map(s => s.trim()).filter(Boolean);
+}
+
+function openDetailPopup(mode = (currentEditMa ? 'edit' : 'add')) {
+  detailPopupMode = mode;
+  const box = document.getElementById('details-container');
+  box.innerHTML = '';
+  detailCount = 0;
+
+  let seed = [];
+  if (mode === 'edit') {
+    const { idx, all } = lsFindByMa(currentEditMa);
+    const old = (idx >= 0 ? all[idx] : null);
+    seed = Array.isArray(pendingDetailsEdit) ? pendingDetailsEdit : _toDetailArray(old?.chitiet);
+  } else {
+    seed = _toDetailArray(pendingDetailsAdd);
+  }
+
+  seed.slice(0, maxDetails).forEach(v => addDetailField(v));
+
+  const modal = document.getElementById('popup-detail');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');           // <<< QUAN TRỌNG
+}
+
+function closeDetailPopup() {
+  const modal = document.getElementById('popup-detail');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');        // <<< QUAN TRỌNG
+}
+
+
+function addDetailField(value = '') {
+  if (detailCount >= maxDetails) { alert('Bạn đã đạt tối đa số lượng chi tiết.'); return; }
+
+  const container = document.getElementById('details-container');
+  const wrap = document.createElement('div');
+  wrap.className = 'flex items-center gap-2';
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.placeholder = 'Chi tiết';
+  inp.value = value || '';
+  inp.className = 'border p-2 rounded w-full';
+
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'px-2 py-2 text-red-600';
+  del.innerHTML = '<i class="fas fa-times"></i>';
+  del.onclick = () => { wrap.remove(); detailCount = Math.max(0, detailCount - 1); };
+
+  wrap.appendChild(inp);
+  wrap.appendChild(del);
+  container.appendChild(wrap);
+  detailCount++;
+}
+
+function saveDetails() {
+  const inputs = document.querySelectorAll('#details-container input');
+  const list = [...inputs].map(i => i.value.trim()).filter(Boolean).slice(0, maxDetails);
+
+  if (detailPopupMode === 'add') {
+    pendingDetailsAdd = list;         // chỉ stash, chưa lưu vào store
+  } else {
+    pendingDetailsEdit = list;        // stash để editProduct() áp dụng
+    // nếu bạn muốn hiển thị tóm tắt vào ô text cũ (không bắt buộc)
+    const chip = document.getElementById('chitiet-sua');
+    if (chip) chip.value = list.join(', ');
+  }
+
+  closeDetailPopup();
+}
+
+
+        // ============= Thêm sản phẩm =============
+        function addProduct() {
+            const ma = document.getElementById("masp").value.trim();
+            const ten = document.getElementById("tensp").value.trim();
+            const chitiet = Array.isArray(pendingDetailsAdd) ? pendingDetailsAdd : [];
+            let loai = document.getElementById("loai").value.trim();
+            const giaNum = onlyDigitsToNumber(document.getElementById("gia").value.trim());
+            const nguon = document.getElementById("nguon").value.trim();
+            const soluong = document.getElementById("soluong").value.trim();
+            const anhInput = document.getElementById("anh-them");
+
+            if (!ma || !ten || !loai) { alert("Vui lòng nhập đủ thông tin bắt buộc (Mã, Tên, Loại)!"); return; }
+            loai = capitalizeWords(loai);
+
+            const chitietKey = _toDetailArray(chitiet).join('|');
+
+            if (isDuplicateMa(ma)) { alert("Mã sản phẩm đã tồn tại. Vui lòng nhập mã khác!"); return; }
+
+            if (isDuplicateProduct(ma, ten, chitiet, loai)) { alert("Sản phẩm này đã tồn tại. Không thể thêm trùng!"); return; }
+
+            const persist = (imgSrc) => {
+                const all = lsGetAll();
+                all.push({ ma, ten, chitiet, loai, gia: giaNum, nguon, soluong: soluong || "0", imgSrc: imgSrc || "", hidden: false });
+                lsSaveAll(all);
+                 pendingDetailsAdd = [];
+                renderFromStore();
+                closeForm('them');
+                alert("Đã thêm sản phẩm " + ten);
+            };
+
+            if (anhInput.files && anhInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => persist(e.target.result);
+                reader.readAsDataURL(anhInput.files[0]);
+            } else persist("");
+            
+        }
+
+        // === CHỐNG TRÙNG MÃ SẢN PHẨM KHI NHẬP (FORM THÊM) ===
+        function isDuplicateMa(ma) {
+            const items = lsGetAll(); // dùng LS_KEY='admin_products' có sẵn
+            const needle = String(ma || '').trim().toLowerCase();
+            return items.some(p => String(p.ma || '').trim().toLowerCase() === needle);
+        }
+
+        /**
+         * Gắn xác thực trùng mã cho input Mã SP.
+         * - fieldId: id của input mã (mặc định: 'masp')
+         * - hintId : id của <small> hiển thị lỗi (tùy chọn)
+         */
+        function bindUniqueMaGuard(fieldId = 'masp', hintId = 'masp-hint') {
+            const inp = document.getElementById(fieldId);
+            const hint = hintId ? document.getElementById(hintId) : null;
+            if (!inp) return;
+
+            const applyState = (ok, msg) => {
+                // HTML5 validity
+                inp.setCustomValidity(ok ? '' : (msg || 'Mã sản phẩm đã tồn tại'));
+                // UI viền đỏ Tailwind
+                if (!ok) {
+                    inp.classList.add('ring-2', 'ring-red-500', 'focus:ring-red-500', 'border-red-500');
+                    if (hint) hint.textContent = msg || 'Mã sản phẩm đã tồn tại';
+                } else {
+                    inp.classList.remove('ring-2', 'ring-red-500', 'focus:ring-red-500', 'border-red-500');
+                    if (hint) hint.textContent = '';
+                }
+            };
+
+            const validate = () => {
+                const v = (inp.value || '').trim();
+                if (!v) { applyState(true, ''); return; }
+                // không cho ký tự trắng toàn bộ / kiểm tra trùng
+                if (isDuplicateMa(v)) applyState(false, 'Mã sản phẩm đã tồn tại. Vui lòng chọn mã khác.');
+                else applyState(true, '');
+            };
+
+            inp.addEventListener('input', validate);
+            inp.addEventListener('blur', validate);
+            // chạy lần đầu
+            validate();
+        }
+
+        // Gắn guard sau khi DOM sẵn sàng
+        document.addEventListener('DOMContentLoaded', () => {
+            bindUniqueMaGuard('masp', 'masp-hint');
+        });
+
+        function bindDateRange(fromId, toId) {
+  const from = document.getElementById(fromId);
+  const to   = document.getElementById(toId);
+  if (!from || !to) return;
+
+  const sync = () => {
+    // Không cho "Đến" < "Từ"
+    to.min = from.value || '';
+    if (to.value && from.value && to.value < from.value) {
+      to.value = from.value;
+    }
+    // (Tuỳ chọn) Không cho "Từ" > "Đến"
+    from.max = to.value || '';
+    if (to.value && from.value && from.value > to.value) {
+      from.value = to.value;
+    }
+  };
+
+  from.addEventListener('change', sync);
+  to.addEventListener('change', sync);
+  sync(); // chạy lần đầu
+}
+
+// Gọi cho tồn kho
+document.addEventListener('DOMContentLoaded', () => {
+  bindDateRange('inv-from-date', 'inv-to-date');
+  bindDateRange('ord-start', 'ord-end');
+  bindDateRange('invoices-start-date', 'invoices-end-date');
+});
+
+
+        // === BẢO VỆ BỔ SUNG TRONG addProduct() ===
+        // Thêm vào đầu hàm addProduct(), ngay sau khi lấy biến 'ma':
+        // if (isDuplicateMa(ma)) { alert("Mã sản phẩm đã tồn tại. Vui lòng nhập mã khác!"); return; }
+
+        // ============= Sửa sản phẩm =============
+        let currentEditMa = "";
+        function populateEdit(ma) {
+            currentEditMa = ma;
+            showForm('sua');
+            const { idx, all } = lsFindByMa(ma);
+            if (idx === -1) return;
+            const p = all[idx];
+
+            document.getElementById("masp-sua").value = p.ma || '';
+            document.getElementById("tensp-sua").value = p.ten || '';
+            const chip = document.getElementById("chitiet-sua");
+if (chip) chip.value = Array.isArray(p.chitiet) ? p.chitiet.join(', ') : (p.chitiet || '');
+            document.getElementById("loai-sua").value = p.loai || '';
+            document.getElementById("gia-sua").value = formatVND(p.gia);
+            document.getElementById("nguon-sua").value = p.nguon || '';
+            document.getElementById("preview-sua").src = p.imgSrc || '';
+            loadCategoryDropdowns(p.loai);
+        }
+
+        // ---- Modal xác nhận: state chờ áp dụng ----
+        let pendingUpdate = null; // {apply: fn}
+
+        function buildDiffTable(oldP, newP) {
+            const tbody = document.getElementById('diff-tbody');
+            tbody.innerHTML = '';
+            const LABELS = { ma: 'Mã SP', ten: 'Tên sản phẩm', chitiet: 'Chi tiết', loai: 'Loại', gia: 'Giá (VND)', nguon: 'Nguồn' };
+            const FIELDS = ['ma', 'ten', 'chitiet', 'loai', 'gia', 'nguon'];
+
+            for (const k of FIELDS) {
+                const tr = document.createElement('tr');
+                const changed = String(oldP[k] ?? '') !== String(newP[k] ?? '');
+                tr.className = changed ? 'diff-changed' : 'diff-unchanged';
+
+                const tdName = document.createElement('td');
+                tdName.className = 'p-2 border-t border-gray-200 font-medium';
+                tdName.textContent = LABELS[k];
+
+                const tdOld = document.createElement('td');
+                tdOld.className = 'p-2 border-t border-gray-200';
+                tdOld.textContent = (k === 'gia') ? formatVND(oldP[k]) : (oldP[k] ?? '');
+
+                const tdNew = document.createElement('td');
+                tdNew.className = 'p-2 border-t border-gray-200';
+                tdNew.textContent = (k === 'gia') ? formatVND(newP[k]) : (newP[k] ?? '');
+
+                tr.appendChild(tdName); tr.appendChild(tdOld); tr.appendChild(tdNew);
+                tbody.appendChild(tr);
+            }
+
+            const imgWrap = document.getElementById('diff-images');
+            const oldImg = document.getElementById('diff-img-old');
+            const newImg = document.getElementById('diff-img-new');
+            const imgChanged = String(oldP.imgSrc || '') !== String(newP.imgSrc || '');
+            if (newP.imgSrc || oldP.imgSrc) {
+                imgWrap.classList.remove('hidden');
+                oldImg.src = oldP.imgSrc || '';
+                newImg.src = newP.imgSrc || '';
+            } else {
+                imgWrap.classList.add('hidden');
+                oldImg.removeAttribute('src');
+                newImg.removeAttribute('src');
+            }
+        }
+
+        function openConfirm(oldP, newP, applyFn) {
+            buildDiffTable(oldP, newP);
+            pendingUpdate = { apply: applyFn };
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            function esc(e) { if (e.key === 'Escape') { closeConfirm(); document.removeEventListener('keydown', esc); } }
+            document.addEventListener('keydown', esc);
+        }
+        function closeConfirm() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingUpdate = null;
+        }
+        function confirmApply() {
+            if (pendingUpdate?.apply) pendingUpdate.apply();
+            closeConfirm();
+            alert("Đã cập nhật sản phẩm");
+            closeForm('sua');
+            currentEditMa = "";
+        }
+
+        function editProduct() {
+            const newMa = document.getElementById("masp-sua").value.trim();
+            const ten = document.getElementById("tensp-sua").value.trim();
+
+            let loai = document.getElementById("loai-sua").value.trim();
+            const giaNum = onlyDigitsToNumber(document.getElementById("gia-sua").value.trim());
+            const nguon = document.getElementById("nguon-sua").value.trim();
+            const anh = document.getElementById("anh-sua");
+
+            if (!newMa || !ten || !loai) { alert("Vui lòng nhập đủ thông tin bắt buộc (Mã, Tên, Loại)!"); return; }
+            loai = capitalizeWords(loai);
+
+            
+
+            const { idx, all } = lsFindByMa(currentEditMa);
+            if (idx === -1) return;
+            const old = all[idx];
+
+            // Ưu tiên pendingDetailsEdit (nếu có), fallback sang old.chitiet (mảng/chuỗi), cuối cùng mới đọc ô text chitiet-sua
+  const textFallback = (document.getElementById("chitiet-sua")?.value || '').trim();
+  const newChitiet = Array.isArray(pendingDetailsEdit)
+    ? pendingDetailsEdit
+    : (Array.isArray(old.chitiet) ? old.chitiet : _toDetailArray(old.chitiet?.length ? old.chitiet : textFallback));
+
+    
+
+  // Khóa so trùng
+  const chitietKey = _toDetailArray(newChitiet).join('|');
+  if (isDuplicateProduct(newMa, ten, chitietKey, loai, true)) { alert("Sản phẩm này đã tồn tại. Không thể trùng!"); return; }
+
+            const prepareAndShow = (imgSrcNewOrNull) => {
+                const newData = {
+                    ...old,
+                    ma: newMa, ten, 
+                    chitiet: newChitiet, 
+                    loai,
+                    gia: giaNum, nguon,
+                    imgSrc: (imgSrcNewOrNull !== null ? imgSrcNewOrNull : old.imgSrc)
+                };
+
+                const applyUpdate = () => {
+                    all[idx] = {
+                        ...old,
+                        ma: newMa, ten, 
+                        chitiet: newChitiet,
+                         loai,
+                        gia: giaNum, nguon,
+                        soluong: old.soluong,
+                        imgSrc: newData.imgSrc,
+                        hidden: old.hidden
+                    };
+                    lsSaveAll(all);
+                    
+      pendingDetailsEdit = null;
+                    renderFromStore();
+                };
+
+                openConfirm(old, newData, applyUpdate);
+            };
+
+            if (anh.files && anh.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => prepareAndShow(e.target.result);
+                reader.readAsDataURL(anh.files[0]);
+            } else {
+                prepareAndShow(null);
+            }
+        }
+
+        // ============= Xóa sản phẩm =============
+        function deleteProductWithConfirm(ma) {
+            if (!confirm("Bạn có chắc muốn xóa sản phẩm không?")) return;
+            const { idx, all } = lsFindByMa(ma);
+            if (idx === -1) { alert("Không tìm thấy sản phẩm!"); return; }
+            all.splice(idx, 1);
+            lsSaveAll(all);
+            renderFromStore();
+            alert("Đã xóa sản phẩm " + ma);
+        }
+        function deleteProduct() {
+            const ma = (document.getElementById('masp-xoa').value || '').trim();
+            if (!ma) { alert("Nhập Mã SP cần xóa"); return; }
+            deleteProductWithConfirm(ma);
+            document.getElementById('masp-xoa').value = '';
+        }
+
+        // ============= Ẩn/Hiện sản phẩm =============
+        function toggleHide(button, ma) {
+            const { idx, all } = lsFindByMa(ma);
+            if (idx === -1) return;
+            all[idx].hidden = !all[idx].hidden;
+            lsSaveAll(all);
+            renderFromStore();
+        }
+
+        // ============= Tìm kiếm =============
+        function filterProducts() {
+            const keyword = (searchNameInput.value || '').toLowerCase();
+            const typeFilter = normalizeType(searchType.value || '');
+            for (let row of productList.rows) {
+                const name = (row.cells[1].innerText || '').toLowerCase();
+                const type = normalizeType(row.cells[3].innerText || '');
+                const matchName = name.includes(keyword);
+                const matchType = !typeFilter || normalizeType(type) === normalizeType(typeFilter);
+                row.style.display = (matchName && matchType) ? '' : 'none';
+            }
+        }
+        searchNameInput.addEventListener('input', filterProducts);
+        searchType.addEventListener('change', filterProducts);
+
+        // ============= Load dropdown loại từ key "categories" =============
+        // ============= Load dropdown loại từ key "categories" =============
+function loadCategoryDropdowns(currentLoaiForEdit = null) {
+  const visible = CAT_getVisibleCategoryNames(); // chỉ lấy Hiển thị
+
+  const selects = [document.getElementById('loai'), document.getElementById('loai-sua')];
+  selects.forEach(sel => {
+    if (!sel) return;
+    const isEdit = sel.id === 'loai-sua';
+    sel.innerHTML = '';
+
+    const optDefault = document.createElement('option');
+    optDefault.value = '';
+    optDefault.textContent = 'Chọn loại sản phẩm';
+    sel.appendChild(optDefault);
+
+    visible.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+
+    // Nếu đang sửa 1 SP thuộc loại đã Ẩn -> vẫn hiển thị option hiện tại (đánh dấu [Ẩn])
+    if (isEdit && currentLoaiForEdit && CAT_isCategoryHidden(currentLoaiForEdit)) {
+      const opt = document.createElement('option');
+      opt.value = currentLoaiForEdit;
+      opt.textContent = `${currentLoaiForEdit} [Ẩn]`;
+      sel.insertBefore(opt, sel.children[1]); // chèn ngay sau placeholder
+      sel.value = currentLoaiForEdit;
+    }
+  });
+}
+
+
+        // ============= PRICING MODULE (Popup) =============
+        const PR_DEFAULT_PROFIT = 20;
+        const PR_EXCLUDE_HIDDEN = true;
+        const LS_INVOICES = 'invoices';
+
+        function PR_onlyDigits(v) { return Number(String(v || '').replace(/[^\d]/g, '')) || 0; }
+        function PR_formatVND(n) {
+            const num = typeof n === 'number' ? n : PR_onlyDigits(n);
+            return num.toLocaleString('vi-VN') + 'đ';
+        }
+        function PR_norm(s) { return String(s || '').trim().toLowerCase(); }
+
+        function PR_lsGetProducts() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch (e) { return []; } }
+        function PR_lsGetInvoices() { try { return JSON.parse(localStorage.getItem(LS_INVOICES) || '[]'); } catch (e) { return []; } }
+        function PR_lsGetPricingData() { try { return JSON.parse(localStorage.getItem(LS_PRICING_DATA) || '{"rows":[]}'); } catch (e) { return { rows: [] }; } }
+        function PR_lsSavePricingData(obj) { localStorage.setItem(LS_PRICING_DATA, JSON.stringify(obj || { rows: [] })); }
+
+        // (1) Dựa theo TÊN
+function PR_getCostFromInvoicesByName(productName) {
+  const nameKey = PR_norm(productName);
+  const invoices = PR_lsGetInvoices();
+  let latest = null;
+  for (const inv of (invoices || [])) {
+    if ((inv?.status || '') !== 'Hoàn thành') continue; // chỉ lấy hoàn thành
+    const invDateMs = new Date(inv?.date || 0).getTime() || 0;
+    for (const p of (inv?.products || [])) {
+      if (PR_norm(p?.name) !== nameKey) continue;
+      const priceNum = Number(p?.price);
+      const totalNum = Number(p?.total);
+      const qtyNum   = Number(p?.quantity);
+      const computed = Number.isFinite(priceNum) && priceNum > 0
+        ? Math.round(priceNum)
+        : (Number.isFinite(totalNum) && Number.isFinite(qtyNum) && qtyNum > 0
+            ? Math.round(totalNum / qtyNum)
+            : 0);
+      if (!latest || invDateMs > latest.invDateMs) latest = { cost: computed, invDateMs };
+    }
+  }
+  return latest ? latest.cost : 0;
+}
+
+// (2) Dựa theo MÃ (ưu tiên), fallback theo tên nếu item chưa có mã
+function PR_getCostFromInvoicesByCode(ma, fallbackName) {
+  const invoices = PR_lsGetInvoices();
+  let latest = null;
+  for (const inv of invoices || []) {
+    if ((inv?.status || '') !== 'Hoàn thành') continue; // chỉ lấy hoàn thành
+    const invDateMs = new Date(inv?.date || 0).getTime() || 0;
+    for (const p of (inv?.products || [])) {
+      const match = (String(p.ma||'').trim().toLowerCase() === String(ma||'').trim().toLowerCase())
+                 || (!p.ma && String(p.name||'').trim().toLowerCase() === String(fallbackName||'').trim().toLowerCase());
+      if (!match) continue;
+      const unit = Number.isFinite(+p.price) && +p.price > 0
+        ? Math.round(+p.price)
+        : (Number.isFinite(+p.total) && Number.isFinite(+p.quantity) && +p.quantity > 0
+            ? Math.round(+p.total / +p.quantity)
+            : 0);
+      if (!latest || invDateMs > latest.invDateMs) latest = { cost: unit, invDateMs };
+    }
+  }
+  return latest ? latest.cost : 0;
+}
+
+
+        function PR_calcSellPrice(cost, p) { const c = Number(cost) || 0; const pp = Number(p) || 0; return Math.max(0, Math.round(c * (1 + pp / 100))); }
+        function PR_getSavedProfitFor(ma) {
+            const saved = PR_lsGetPricingData();
+            const row = (saved.rows || []).find(r => r.ma === ma);
+            return Number.isFinite(row?.profitPercent) && row.profitPercent >= 0 ? row.profitPercent : PR_DEFAULT_PROFIT;
+        }
+        function PR_updateRowInStorage({ ma, ten, loai, cost, profitPercent }) {
+            const data = PR_lsGetPricingData();
+            const rows = Array.isArray(data.rows) ? data.rows : [];
+            const idx = rows.findIndex(r => r.ma === ma);
+            const sellPrice = PR_calcSellPrice(cost, profitPercent);
+            const newRow = { ma, ten, loai, cost, profitPercent, sellPrice };
+            if (idx >= 0) rows[idx] = newRow; else rows.push(newRow);
+            data.rows = rows;
+            data.savedAt = new Date().toISOString();
+            PR_lsSavePricingData(data);
+            window.dispatchEvent(new Event('pricing_data_changed'));
+        }
+
+        // DOM pricing
+        const PR_modal = document.getElementById('pricing-modal');
+        const PR_tbody = document.getElementById('pricing-tbody');
+        const PR_search = document.getElementById('pricing-search');
+        const PR_filterType = document.getElementById('pricing-filter-type');
+
+        function openPricingModal() {
+            // nạp dropdown loại trước
+            PR_loadTypeOptions();
+            PR_renderTable();
+            PR_modal.classList.remove('hidden');
+            PR_modal.classList.add('flex');
+            function esc(e) { if (e.key === 'Escape') { closePricingModal(); document.removeEventListener('keydown', esc); } }
+            document.addEventListener('keydown', esc);
+        }
+        function closePricingModal() {
+            PR_modal.classList.add('hidden');
+            PR_modal.classList.remove('flex');
+            // refresh bảng sản phẩm để cập nhật Giá bán hiển thị
+            renderFromStore();
+        }
+
+        function PR_loadTypeOptions() {
+  const products = PR_lsGetProducts() || [];
+  const visibleCat = new Set(CAT_getVisibleCategoryNames().map(n => String(n).trim().toLowerCase()));
+
+  const set = new Set(
+    products
+      .filter(p => (PR_EXCLUDE_HIDDEN ? !p.hidden : true))
+      .map(p => String(p.loai || '').trim())
+      .filter(loai => loai && visibleCat.has(loai.trim().toLowerCase())) // chỉ loại Hiển thị
+  );
+
+  PR_filterType.innerHTML = '<option value="">Tất cả</option>';
+  [...set].sort().forEach(loai => {
+    const opt = document.createElement('option');
+    opt.value = loai;
+    opt.textContent = loai;
+    PR_filterType.appendChild(opt);
+  });
+}
+
+
+        function PR_buildRow({ ma, ten, loai, cost, profitPercent }) {
+            const tr = document.createElement('tr');
+            tr.className = 'border-b';
+            tr.dataset.ma = ma;
+
+            const tdMa = document.createElement('td'); tdMa.className = 'p-3 whitespace-nowrap'; tdMa.textContent = ma || '';
+            const tdTen = document.createElement('td'); tdTen.className = 'p-3'; tdTen.textContent = ten || '';
+            const tdLoai = document.createElement('td'); tdLoai.className = 'p-3 whitespace-nowrap'; tdLoai.textContent = loai || '';
+            const tdCost = document.createElement('td'); tdCost.className = 'p-3 whitespace-nowrap'; tdCost.textContent = PR_formatVND(cost);
+
+            const tdPercent = document.createElement('td'); tdPercent.className = 'p-3 whitespace-nowrap';
+            tdPercent.innerHTML = `
+        <input type="number" min="0" step="1"
+               class="pricing-profit-input border rounded p-1 w-20 text-center"
+               value="${profitPercent}">
+        <span class="ml-1">%</span>
+      `;
+
+            const tdPrice = document.createElement('td'); tdPrice.className = 'p-3 font-semibold whitespace-nowrap';
+            tdPrice.dataset.role = 'sellPrice';
+            tdPrice.textContent = PR_formatVND(PR_calcSellPrice(cost, profitPercent));
+
+            tr.appendChild(tdMa); tr.appendChild(tdTen); tr.appendChild(tdLoai); tr.appendChild(tdCost); tr.appendChild(tdPercent); tr.appendChild(tdPrice);
+            return tr;
+        }
+
+        function PR_renderTable() {
+            const products = (PR_lsGetProducts() || []).filter(p => PR_EXCLUDE_HIDDEN ? !p.hidden : true);
+            const kw = (PR_search.value || '').trim().toLowerCase();
+            const selectedType = (PR_filterType.value || '').trim().toLowerCase();
+
+            while (PR_tbody.firstChild) PR_tbody.removeChild(PR_tbody.firstChild);
+
+            const filtered = products.filter(p => {
+                const passKw = !kw || (`${p.ma || ''} ${p.ten || ''}`.toLowerCase().includes(kw));
+                if (!passKw) return false;
+                const loai = String(p.loai || '').trim().toLowerCase();
+                const passLoai = !selectedType || loai === selectedType;
+                return passLoai;
+            });
+
+            filtered.forEach(p => {
+                const ma = p.ma || '';
+                const ten = p.ten || '';
+                const loai = p.loai || '';
+                const cost = PR_getCostFromInvoicesByCode(ma, ten);
+                const profitPercent = PR_getSavedProfitFor(ma);
+                const rowEl = PR_buildRow({ ma, ten, loai, cost, profitPercent });
+                PR_tbody.appendChild(rowEl);
+                // lưu snapshot để đảm bảo có 'loai' trong pricing_data
+                PR_updateRowInStorage({ ma, ten, loai, cost, profitPercent });
+            });
+        }
+
+        // Event: thay đổi % lợi nhuận trong popup
+        PR_tbody.addEventListener('input', (e) => {
+            const target = e.target;
+            if (!target.classList.contains('pricing-profit-input')) return;
+
+            const tr = target.closest('tr');
+            if (!tr) return;
+            const ma = tr.dataset.ma || '';
+            const tds = tr.querySelectorAll('td');
+
+            const ten = tds[1]?.textContent?.trim() || '';
+            const loai = tds[2]?.textContent?.trim() || '';
+            const costText = tds[3]?.textContent || '0';
+            const cost = PR_onlyDigits(costText);
+
+            const profitPercent = Math.max(0, Number(target.value) || 0);
+
+            const priceCell = tr.querySelector('td[data-role="sellPrice"]');
+            if (priceCell) {
+                priceCell.textContent = PR_formatVND(PR_calcSellPrice(cost, profitPercent));
+            }
+
+            PR_updateRowInStorage({ ma, ten, loai, cost, profitPercent });
+        });
+
+        PR_search.addEventListener('input', PR_renderTable);
+        PR_filterType.addEventListener('change', PR_renderTable);
+
+        function PR_touchOnInvoicesChange(products) {
+            const allProducts = PR_lsGetProducts() || [];
+            (products || []).forEach(p => {
+                const ma = p.ma || '';
+                const ten = p.name || (allProducts.find(x => x.ma === ma)?.ten) || '';
+                const loai = (allProducts.find(x => x.ma === ma)?.loai) || '';
+                const cost = Number(p.price) || (Number(p.total) && Number(p.quantity) ? Math.round(p.total / p.quantity) : 0);
+                const profitPercent = PR_getSavedProfitFor(ma);
+                PR_updateRowInStorage({ ma, ten, loai, cost, profitPercent });
+            });
+        }
+
+
+        // ============= Khởi tạo =============
+        window.addEventListener('DOMContentLoaded', () => {
+            Invoices__refreshProductsView();
+            renderFromStore();
+            document.getElementById('gia')?.addEventListener('blur', e => e.target.value = formatVND(e.target.value));
+            document.getElementById('gia-sua')?.addEventListener('blur', e => e.target.value = formatVND(e.target.value));
+            loadCategoryDropdowns();
+        });
+
+        // expose cho HTML
+        window.populateEdit = populateEdit;
+        window.deleteProductWithConfirm = deleteProductWithConfirm;
+        window.deleteProduct = deleteProduct;
+        window.toggleHide = toggleHide;
+        window.addProduct = addProduct;
+        window.editProduct = editProduct;
+        window.showForm = showForm;
+        window.closeForm = closeForm;
+        window.closeConfirm = closeConfirm;
+        window.confirmApply = confirmApply;
+        window.openPricingModal = openPricingModal;
+        window.closePricingModal = closePricingModal;
+
+        // ===== Modal show/close (đã dùng ở trên) =====
+        function showForm(loai) {
+            ["form-them", "form-sua", "form-xoa"].forEach(id => document.getElementById(id).classList.add('hidden'));
+            const el = document.getElementById("form-" + loai);
+            el.classList.remove('hidden');
+            el.style.display = 'flex';
+        }
+        function closeForm(loai) {
+  const el = document.getElementById("form-" + loai);
+  if (el) el.style.display = 'none';
+
+  const safeClear = (ids = []) => {
+    ids.forEach(id => {
+      const node = document.getElementById(id);
+      if (node && 'value' in node) node.value = '';
+    });
+  };
+
+  if (loai === 'them') {
+    // BỎ 'chitiet' vì đã chuyển sang popup
+    safeClear(["masp", "tensp", "loai", "gia", "nguon", "soluong"]);
+    const imgPrev = document.getElementById("preview-them");
+    if (imgPrev) imgPrev.src = "";
+    const fileInp = document.getElementById("anh-them");
+    if (fileInp) fileInp.value = "";
+
+    // reset popup & stash
+    const box = document.getElementById('details-container'); if (box) box.innerHTML = '';
+    detailCount = 0;
+    pendingDetailsAdd = [];
+
+  } else if (loai === 'sua') {
+    // BỎ 'chitiet-sua' vì đã chuyển sang popup
+    safeClear(["masp-sua", "tensp-sua", "loai-sua", "gia-sua", "nguon-sua"]);
+    const imgPrev2 = document.getElementById("preview-sua");
+    if (imgPrev2) imgPrev2.src = "";
+    const fileInp2 = document.getElementById("anh-sua");
+    if (fileInp2) fileInp2.value = "";
+    currentEditMa = "";
+
+    // Nếu bạn có popup chi tiết cho Sửa:
+    const boxEdit = document.getElementById('detail-fields-edit');
+    if (boxEdit) boxEdit.innerHTML = "";
+  }
+}
+function openProductDetailModal() { 
+  const m = document.getElementById("product-detail-modal");
+  if (m) m.classList.remove("hidden");
+}
+window.openProductDetailModal = openProductDetailModal;
+
+        // ===== CATEGORIES POPUP CONTROL =====
+        const CAT_modal = document.getElementById('categories-modal');
+        function openCategoriesModal() {
+            CAT_loadCategories();
+            CAT_renderCategoryTable();
+            CAT_modal.classList.remove('hidden');
+            CAT_modal.classList.add('flex');
+            const esc = (e) => { if (e.key === 'Escape') { closeCategoriesModal(); document.removeEventListener('keydown', esc); } };
+            document.addEventListener('keydown', esc);
+        }
+        function closeCategoriesModal() {
+            CAT_modal.classList.add('hidden');
+            CAT_modal.classList.remove('flex');
+            // cập nhật dropdown loại của form sản phẩm:
+            if (typeof loadCategoryDropdowns === 'function') loadCategoryDropdowns();
+            // nếu muốn refresh luôn bảng sản phẩm theo loại mới:
+            // renderFromStore();
+        }
+
+        // ===== CORE LOGIC (đổi tên hàm/ID để không trùng) =====
+        let CAT_categories = [];
+
+        // Lấy dữ liệu từ localStorage
+        function CAT_loadCategories() {
+            const stored = localStorage.getItem('categories');
+            CAT_categories = stored ? JSON.parse(stored) : [];
+        }
+        // Lưu dữ liệu
+        function CAT_saveCategories() {
+            localStorage.setItem('categories', JSON.stringify(CAT_categories));
+            // đồng bộ dropdown ngay lập tức
+            if (typeof loadCategoryDropdowns === 'function') loadCategoryDropdowns();
+        }
+
+        // Hiển/ẩn modal con (thêm/sửa)
+        function CAT_showFormCategories(loai) {
+            // ẩn cả 2 trước
+            document.getElementById('form-them-categories').classList.add('hidden');
+            document.getElementById('form-sua-categories').classList.add('hidden');
+
+            const el = document.getElementById(`form-${loai}-categories`);
+            el.classList.remove('hidden');
+            el.classList.add('flex'); // center
+        }
+        function CAT_closeFormCategories(loai) {
+            const el = document.getElementById(`form-${loai}-categories`);
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+            if (loai === 'them') {
+                document.getElementById('maloai-categories').value = '';
+                document.getElementById('tenloai-categories').value = '';
+            } else if (loai === 'sua') {
+                document.getElementById('maloai-sua-categories').value = '';
+                document.getElementById('tenloai-sua-categories').value = '';
+            }
+        }
+
+        function capitalizeWords(str) {
+    return str
+        .trim() // loại bỏ khoảng trắng thừa đầu và cuối
+        .split(/\s+/) // chia chuỗi thành mảng các từ
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // viết hoa chữ cái đầu và chữ còn lại là chữ thường
+        .join(' '); // nối lại các từ thành chuỗi với khoảng trắng giữa các từ
+}
+
+            // Thêm loại
+            function CAT_addCategory() {
+                const maLoai = 'ML' + Math.floor(Math.random() * 10000);
+                let tenLoai = (document.getElementById('tenloai-categories').value || '').trim();
+    
+    // Kiểm tra nếu không nhập tên loại
+    if (!tenLoai) {
+        alert('Vui lòng nhập đầy đủ thông tin (Tên loại)!');
+        return;
+    }
+
+    // Chuyển tên loại thành chữ hoa chữ cái đầu mỗi từ
+    tenLoai = capitalizeWords(tenLoai); 
+
+                CAT_categories.push({ maLoai, tenLoai, trangThai: 'Hiển thị' });
+                CAT_saveCategories();
+                CAT_renderCategoryTable();
+                CAT_closeFormCategories('them');
+                alert('Đã thêm loại sản phẩm: ' + tenLoai);
+            }
+
+        // Render bảng
+        function CAT_renderCategoryTable() {
+            const tbody = document.getElementById('category-list-categories');
+            // clear
+            while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+            if (!CAT_categories.length) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="4" class="p-3 text-center">Không có loại sản phẩm nào.</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+
+            CAT_categories.forEach(category => {
+                const tr = document.createElement('tr');
+                tr.id = category.maLoai;
+                if (category.trangThai === 'Ẩn') tr.classList.add('bg-gray-400');
+
+                tr.innerHTML = `
+      <td class="p-3">${category.maLoai}</td>
+      <td class="p-3">${category.tenLoai}</td>
+      <td class="p-3">${category.trangThai}</td>
+      <td class="p-3">
+        <button onclick="CAT_populateEditCategory('${category.maLoai}')" class="text-yellow-500 hover:text-yellow-700" title="Sửa">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button onclick="CAT_deleteCategory('${category.maLoai}')" class="text-red-500 hover:text-red-700" title="Xóa">
+          <i class="fas fa-trash"></i>
+        </button>
+        <button onclick="CAT_toggleStatusCategory('${category.maLoai}')" class="text-gray-700 hover:text-black" title="Ẩn/Hiện">
+          ${category.trangThai === 'Hiển thị' ? 'Ẩn' : 'Bỏ ẩn'}
+        </button>
+      </td>
+    `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Điền form sửa
+        function CAT_populateEditCategory(maLoai) {
+            const cat = CAT_categories.find(c => c.maLoai === maLoai);
+            if (!cat) return;
+            document.getElementById('maloai-sua-categories').value = cat.maLoai;
+            document.getElementById('tenloai-sua-categories').value = cat.tenLoai;
+            CAT_showFormCategories('sua');
+        }
+
+        function checkCategoryInUse(categoryName) {
+    // Lấy danh sách sản phẩm từ localStorage
+    const products = lsGetAll(); // hoặc từ nơi khác nếu bạn lưu trữ ở nơi khác
+    
+    // Kiểm tra tất cả sản phẩm để xem có sản phẩm nào sử dụng loại này không
+    const isCategoryInUse = products.some(product => product.loai === categoryName);
+    
+    return isCategoryInUse;
+}
+
+        // Ẩn/Hiện + tô nền
+        function CAT_toggleStatusCategory(maLoai) {
+            const idx = CAT_categories.findIndex(c => c.maLoai === maLoai);
+            if (idx < 0) return;
+            const cat = CAT_categories[idx];
+            // Kiểm tra nếu loại đang sử dụng có sản phẩm nào liên kết với nó
+    if (checkCategoryInUse(cat.tenLoai)) {
+        alert("Không thể thay đổi trạng thái loại này vì có sản phẩm đang sử dụng loại này.");
+        return;
+    }
+            cat.trangThai = (cat.trangThai === 'Hiển thị') ? 'Ẩn' : 'Hiển thị';
+            CAT_saveCategories();
+            CAT_renderCategoryTable();
+
+            try { rebuildCategories(); } catch(e){}
+  try { PR_loadTypeOptions(); PR_renderTable(); } catch(e){}
+  try { INV_loadFilterTypeOptions(); } catch(e){}
+        }
+
+        // Xóa
+        function CAT_deleteCategory(maLoai) {
+            const category = CAT_categories.find(c => c.maLoai === maLoai);
+
+    // Nếu không tìm thấy loại
+    if (!category) {
+        alert('Không tìm thấy loại sản phẩm này!');
+        return;
+    }
+
+    // Kiểm tra xem loại này có đang được sử dụng trong sản phẩm nào không
+    if (checkCategoryInUse(category.tenLoai)) {  // Sử dụng category.tenLoai thay vì categoryName
+        alert("Không thể xóa hoặc ẩn loại này vì có sản phẩm đang sử dụng loại này.");
+        return;
+    }
+
+            if (!confirm('Bạn có chắc chắn muốn xóa loại sản phẩm này?')) return;
+            CAT_categories = CAT_categories.filter(c => c.maLoai !== maLoai);
+            CAT_saveCategories();
+            CAT_renderCategoryTable();
+        }
+
+        // Cập nhật
+        function CAT_updateCategory() {
+            const maLoai = (document.getElementById('maloai-sua-categories').value || '').trim();
+            const tenLoai = (document.getElementById('tenloai-sua-categories').value || '').trim();
+            if (!tenLoai) { alert('Vui lòng nhập đầy đủ thông tin (Tên loại)!'); return; }
+
+            CAT_categories = CAT_categories.map(c => c.maLoai === maLoai ? { ...c, tenLoai } : c);
+            CAT_saveCategories();
+            CAT_renderCategoryTable();
+            CAT_closeFormCategories('sua');
+            alert('Đã cập nhật loại sản phẩm: ' + tenLoai);
+        }
+        // ===== Helpers đọc categories từ localStorage =====
+function CAT_readAllFromLS() {
+  try { return JSON.parse(localStorage.getItem('categories') || '[]'); }
+  catch (e) { return []; }
+}
+
+// Tên loại "HIỂN THỊ"
+function CAT_getVisibleCategoryNames() {
+  return CAT_readAllFromLS()
+    .filter(c => (c?.trangThai || '') === 'Hiển thị')
+    .map(c => c.tenLoai)
+    .filter(Boolean);
+}
+
+// Kiểm tra 1 tên loại đang bị Ẩn?
+function CAT_isCategoryHidden(name) {
+  const n = String(name || '').trim().toLowerCase();
+  const hit = CAT_readAllFromLS().find(c => String(c.tenLoai || '').trim().toLowerCase() === n);
+  return hit ? (hit.trangThai === 'Ẩn') : false;
+}
+
+
+        // expose cho HTML
+        window.openCategoriesModal = openCategoriesModal;
+        window.closeCategoriesModal = closeCategoriesModal;
+        window.CAT_showFormCategories = CAT_showFormCategories;
+        window.CAT_closeFormCategories = CAT_closeFormCategories;
+        window.CAT_addCategory = CAT_addCategory;
+        window.CAT_renderCategoryTable = CAT_renderCategoryTable;
+        window.CAT_populateEditCategory = CAT_populateEditCategory;
+        window.CAT_toggleStatusCategory = CAT_toggleStatusCategory;
+        window.CAT_deleteCategory = CAT_deleteCategory;
+        window.CAT_updateCategory = CAT_updateCategory;
+
+        // ====== EDIT SUBMIT HANDLER (chuẩn) ======
+        function Invoices_handleEditSubmit(e) {
+            e.preventDefault();
+            const id = q('invoices-edit-id').value;
+            const rawName = q('invoices-edit-name').value;
+            const ref = Invoices_resolveProductRef(rawName);
+            const ma = ref?.ma || rawName;
+            const name = ref?.ten || rawName;
+            const qty = parseInt(q('invoices-edit-qty').value) || 0;
+            const price = Invoices_normalizePrice(q('invoices-edit-price').value) || 0;
+            const total = qty * price;
+
+            const all = Invoices_lsGetAll();
+            const idx = all.findIndex(i => i.id === id);
+            if (idx > -1) {
+                all[idx].products = [{ ma, name, price, quantity: qty, total }];
+                all[idx].value = total;
+                Invoices_lsSaveAll(all);
+                Invoices_renderTable();
+                Invoices__refreshProductsView();
+                
+
+                alert('Đã lưu phiếu nhập ' + id);
+                Invoices_closeEditModal();
+                Invoices_openDetail(id);
+            }
+        }
+
+        // Gắn submit cho form sửa sau khi DOM sẵn sàng
+        document.addEventListener('DOMContentLoaded', () => {
+            const editForm = q('invoices-edit-form');
+            if (editForm) {
+                editForm.addEventListener('submit', Invoices_handleEditSubmit);
+            }
+        });
+
+
+
+        function Invoices_updateEditPreview() {
+            const qty = parseFloat(document.getElementById('invoices-edit-qty').value) || 0;
+            const price = Invoices_normalizePrice(document.getElementById('invoices-edit-price').value) || 0;
+            document.getElementById('invoices-edit-total').textContent = Invoices_formatVND(qty * price);
+        }
+
+
+        // ====== COMPLETE ======
+        function Invoices_complete(id) {
+  const all = Invoices_lsGetAll();
+  const idx = all.findIndex(i => i.id === id);
+  if (idx === -1) return;
+  if (!confirm('Bạn có chắc muốn hoàn thành đơn?')) return;
+
+  // 1) Đổi trạng thái
+  all[idx].status = 'Hoàn thành';
+  Invoices_lsSaveAll(all);
+
+  // 2) Cập nhật pricing_data dựa trên sản phẩm của phiếu này
+  try {
+    const products = all[idx]?.products || [];
+    if (products.length && typeof PR_touchOnInvoicesChange === 'function') {
+      PR_touchOnInvoicesChange(products);
+    }
+  } catch (e) {}
+
+  // 3) Cập nhật tồn kho/logs rồi refresh view
+  try {
+    window.INV__rebuildStockLogs?.();
+    // Apply lại khoảng lọc hiện tại của modal tồn kho (nếu đang mở) – mặc định all-time
+    window.INV__applyRangeToInventoryStore?.('', '');
+  } catch (e) {}
+
+  Invoices_renderTable();
+  Invoices__refreshProductsView();
+
+  alert('Phiếu nhập đã được hoàn thành!');
+}
+
+
+        // ====== (TÙY CHỌN) ĐỒNG BỘ TỒN KHO SAU KHI HOÀN THÀNH ======
+        function Invoices_syncInventoryFromInvoice(inv) {
+            if (!inv || !Array.isArray(inv.products)) return;
+            const LS_INVENTORY_KEY = 'inventory';
+            const invStore = (() => { try { return JSON.parse(localStorage.getItem(LS_INVENTORY_KEY) || '[]'); } catch (e) { return []; } })();
+            inv.products.forEach(p => {
+                const nameKey = String(p.name || '').trim().toLowerCase();
+                let row = invStore.find(r => String(r.ten || '').trim().toLowerCase() === nameKey);
+                if (!row) { row = { ten: p.name, tonKho: 0 }; invStore.push(row); }
+                row.tonKho = (row.tonKho || 0) + (Number(p.quantity) || 0);
+            });
+            localStorage.setItem(LS_INVENTORY_KEY, JSON.stringify(invStore));
+        }
+
+
+        // ====== BINDINGS ======
+        (function Invoices_boot() {
+            const $ = (id) => document.getElementById(id);
+            // Nếu có BẤT KỲ modal invoices nào thì bind
+            if ($('invoices-modal') || $('invoices-edit-modal') || $('invoices-detail-modal')) {
+                const s = $('invoices-start-date');
+                const e = $('invoices-end-date');
+                if (s) s.addEventListener('input', Invoices_filter);
+                if (e) e.addEventListener('input', Invoices_filter);
+                if (typeof Invoices_bindCreate === 'function') Invoices_bindCreate();
+                if (typeof Invoices_bindEdit === 'function') Invoices_bindEdit();
+            }
+        })();
+        function openInvoicesModal() {
+            const m = q('invoices-modal');
+            if (!m) {
+                const cm = q('invoices-create-modal') || q('create-modal');
+                if (cm) {
+                    cm.classList.remove('hidden');
+                    cm.classList.add('flex');
+                } else {
+                    alert('Chưa chèn khối Invoices Modal (id="invoices-modal").');
+                }
+                return;
+            }
+
+            // Luôn reset filter & render lại bảng mỗi lần mở
+            const s = q('invoices-start-date');
+            const e = q('invoices-end-date');
+            if (s) s.value = '';
+            if (e) e.value = '';
+
+            Invoices_renderTable();
+
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function closeInvoicesModal() {
+            const m = q('invoices-modal');
+            if (m) {
+                m.classList.add('hidden');
+                m.classList.remove('flex');
+            }
+        }
+        window.openInvoicesModal = openInvoicesModal;
+        window.closeInvoicesModal = closeInvoicesModal;
+
+        // ===== STORE =====
+        function Invoices_lsGetAll() {
+            try { return JSON.parse(localStorage.getItem('invoices') || '[]'); }
+            catch (e) { return []; }
+        }
+        function Invoices_lsSaveAll(arr) {
+            localStorage.setItem('invoices', JSON.stringify(arr || []));
+        }
+
+        // ===== FORMAT / UTILS =====
+        function Invoices_onlyDigits(v) { return Number(String(v || '').replace(/[^\d]/g, '')) || 0; }
+        function Invoices_formatVND(n) { const x = typeof n === 'number' ? n : Invoices_onlyDigits(n); return x.toLocaleString('vi-VN') + ' VNĐ'; }
+        function Invoices_normalizePrice(input) { return Invoices_onlyDigits(input); }
+
+        // ===== RENDER LIST =====
+        function Invoices_renderTable() {
+            const tbody = document.getElementById('invoices-tbody');
+            if (!tbody) return;
+            while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+            const start = document.getElementById('invoices-start-date')?.value;
+            const end = document.getElementById('invoices-end-date')?.value;
+            const all = Invoices_lsGetAll();
+
+            const filtered = all.filter(inv => {
+                const d = new Date(inv.date || Date.now());
+                const okStart = !start || d >= new Date(start + 'T00:00:00');
+                const okEnd = !end || d <= new Date(end + 'T23:59:59');
+                return okStart && okEnd;
+            });
+
+            if (!filtered.length) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="5" class="p-3 text-center text-gray-500">Chưa có phiếu nhập nào.</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            filtered.forEach(inv => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+      <td class="p-2">${inv.id}</td>
+      <td class="p-2">${new Date(inv.date).toLocaleString('vi-VN')}</td>
+      <td class="p-2 font-semibold">${Invoices_formatVND(inv.value || 0)}</td>
+      <td class="p-2">${inv.status || 'Đang Xử Lý'}</td>
+      <td class="p-2 whitespace-nowrap">
+        <button class="text-indigo-600 mr-2" title="Chi tiết" onclick="Invoices_openDetail('${inv.id}')"><i class="fas fa-eye"></i></button>
+        <button class="text-yellow-600 mr-2" title="Sửa" onclick="Invoices_edit('${inv.id}')"><i class="fas fa-edit"></i></button>
+        <button class="text-emerald-600" title="Hoàn thành" onclick="Invoices_complete('${inv.id}')"><i class="fas fa-check-circle"></i></button>
+      </td>
+    `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function Invoices_filter() { Invoices_renderTable(); }
+        // Đảm bảo sau khi F5, danh sách phiếu nhập vẫn được render sẵn (dù modal đang ẩn)
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('invoices-tbody')) {
+                Invoices_renderTable();
+            }
+        });
+
+        // ===== CREATE =====
+        function Invoices_openCreateModal() {
+            const m = q('invoices-create-modal');
+            if (!m) return;
+            q('invoices-product-name').value = '';
+            q('invoices-product-qty').value = '1';
+            q('invoices-product-price').value = '';
+            q('invoices-total-preview').textContent = '0 VNĐ';
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function Invoices_closeCreateModal() {
+            const m = q('invoices-create-modal');
+            if (!m) return;
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        function Invoices_bindCreate() {
+            const f = q('invoices-create-form');
+            if (!f) return;
+
+            const recalc = () => {
+                const qty = parseFloat(q('invoices-product-qty').value) || 0;
+                const price = Invoices_normalizePrice(q('invoices-product-price').value) || 0;
+                q('invoices-total-preview').textContent = Invoices_formatVND(qty * price);
+            };
+            q('invoices-product-qty').addEventListener('input', recalc);
+            q('invoices-product-price').addEventListener('input', recalc);
+
+            f.addEventListener('submit', e => {
+                e.preventDefault();
+                const raw = (q('invoices-product-name').value || '').trim();
+                const ref = Invoices_resolveProductRef(raw);
+                const ma = ref?.ma || raw;            // fallback: lưu tạm raw để không crash
+                const name = ref?.ten || raw;
+                const qty = parseInt(q('invoices-product-qty').value) || 0;
+                const price = Invoices_normalizePrice(q('invoices-product-price').value) || 0;
+                if (!name || qty <= 0 || price <= 0) { alert('Điền đủ Tên, Số lượng > 0, Đơn giá > 0'); return; }
+
+                const id = 'PN' + Date.now();
+                const total = qty * price;
+                const inv = {
+                    id, date: new Date().toISOString(), status: 'Đang Xử Lý', value: total,
+                    products: [{ ma, name, quantity: qty, price, total }]
+                };
+
+                const all = Invoices_lsGetAll(); all.push(inv); Invoices_lsSaveAll(all);
+                
+                Invoices_closeCreateModal(); Invoices_renderTable();
+                // Mở chi tiết luôn cho tiện
+                Invoices_openDetail(id);
+                Invoices__refreshProductsView();
+            });
+        }
+
+        // ===== EDIT =====
+        function Invoices_edit(id) {
+            const all = Invoices_lsGetAll();
+            const inv = all.find(i => i.id === id);
+            if (!inv) return;
+
+            q('invoices-edit-id').value = inv.id;
+            q('invoices-edit-name').value = inv.products?.[0]?.name || '';
+            q('invoices-edit-qty').value = inv.products?.[0]?.quantity || 1;
+            q('invoices-edit-price').value = Invoices_formatVND(inv.products?.[0]?.price || 0).replace(' VNĐ', '');
+            q('invoices-edit-total').textContent = Invoices_formatVND(inv.value || 0);
+
+            const m = q('invoices-edit-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+
+            // xem trước tổng tiền khi gõ
+            q('invoices-edit-qty').addEventListener('input', Invoices_updateEditPreview);
+            q('invoices-edit-price').addEventListener('input', Invoices_updateEditPreview);
+        }
+        function Invoices_closeEditModal() {
+            const m = q('invoices-edit-modal');
+            if (!m) return;
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+
+        // ===== DETAIL =====
+        function Invoices_openDetail(id) {
+            const all = Invoices_lsGetAll();
+            const inv = all.find(i => i.id === id);
+            if (!inv) return;
+
+            const tbody = document.querySelector('#invoices-detail-table tbody');
+            while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+            (inv.products || []).forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+      <td class="p-2">${p.name}</td>
+      <td class="p-2">${Invoices_formatVND(p.price)}</td>
+      <td class="p-2">${p.quantity}</td>
+    `;
+                tbody.appendChild(tr);
+            });
+            q('invoices-detail-total').textContent = Invoices_formatVND(inv.value || 0);
+
+            const m = q('invoices-detail-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function Invoices_closeDetailModal() {
+            const m = q('invoices-detail-modal');
+            if (!m) return;
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+
+        // ===== EDIT BIND (đã có submit handler ở trên) =====
+        function Invoices_bindEdit() {
+            const qty = q('invoices-edit-qty');
+            const price = q('invoices-edit-price');
+            if (qty) qty.addEventListener('input', Invoices_updateEditPreview);
+            if (price) price.addEventListener('input', Invoices_updateEditPreview);
+        }
+
+
+        // expose
+        window.openInvoicesModal = openInvoicesModal;
+        window.closeInvoicesModal = closeInvoicesModal;
+        window.Invoices_openDetail = Invoices_openDetail;
+        window.Invoices_edit = Invoices_edit;
+        window.Invoices_complete = Invoices_complete;
+        // ====== INVENTORY POPUP LOGIC (không đụng code cũ) ======
+        (function () {
+            // Dùng lại các key/layers sẵn có
+            const LS_ADMIN_PRODUCTS = 'admin_products';
+            const LS_INVENTORY = 'inventory';
+            const LS_INVOICES = 'invoices';
+            const LS_ORDERS = 'admin_orders';
+            const LS_STOCK_LOGS = 'stock_logs';
+
+            // ===== Helpers =====
+            const q = (id) => document.getElementById(id);
+            const norm = (s) => String(s || '').trim().toLowerCase();
+
+            function lsGet(key, fallback = []) { try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch (e) { return fallback; } }
+            function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+            // ===== Hiển thị tên không trùng (chỉ UI, giữ tên gốc cho đối soát logs) =====
+            function ensureUniqueDisplayName(baseName, inventory, currentMa = null) {
+                const taken = new Set(
+                    inventory
+                        .filter(p => !currentMa || p.ma !== currentMa)
+                        .map(p => norm(p.hienThiTen || p.ten))
+                );
+                const base = String(baseName || '').trim();
+                if (!taken.has(norm(base))) return base;
+
+                let candidate = `${base} (inventory)`;
+                let idx = 2;
+                while (taken.has(norm(candidate))) {
+                    candidate = `${base} (inventory-${idx++})`;
+                }
+                return candidate;
+            }
+
+            // ===== Đồng bộ admin_products -> inventory (giữ tên gốc, thêm tên hiển thị tránh trùng) =====
+            function INV_syncAdminProductsToInventory() {
+                const adminProducts = lsGet(LS_ADMIN_PRODUCTS, []);
+                const inventory = lsGet(LS_INVENTORY, []);
+
+                adminProducts.forEach(p => {
+                    let inv = inventory.find(x => (x.ma || '') === (p.ma || ''));
+                    if (!inv) {
+                        const displayName = ensureUniqueDisplayName(p.ten, inventory, null);
+                        inventory.push({
+                            ma: p.ma,
+                            ten: p.ten,              // tên gốc để khớp hóa đơn/đơn hàng
+                            hienThiTen: displayName, // tên hiển thị chống trùng
+                            tonKho: '', tinhTrang: '', nhapXuatTon: ''
+                        });
+                    } else {
+                        // cập nhật tên gốc và refresh tên hiển thị nếu bị xung đột
+                        inv.ten = p.ten;
+                        inv.hienThiTen = ensureUniqueDisplayName(inv.ten, inventory, inv.ma);
+                    }
+                });
+
+                lsSet(LS_INVENTORY, inventory);
+            }
+
+            // ===== Stock logs build từ invoices + orders =====
+            function INV_rebuildStockLogs() {
+  const invoices = lsGet(LS_INVOICES, []);
+  const orders   = lsGet(LS_ORDERS, []);
+  const logs = [];
+
+  (invoices || []).forEach(inv => {
+    if ((inv?.status || '') !== 'Hoàn thành') return; // chỉ lấy hoàn thành
+    (inv.products || []).forEach(p => {
+      logs.push({
+        type:'in',
+        code: (p.ma||'')+'',
+        name: String(p.name||''),
+        qty:  Number(p.quantity)||0,
+        date: (inv.date || new Date().toISOString()).slice(0, 10),
+        source: 'invoice',
+        sourceId: inv.id || null
+      });
+    });
+  });
+
+  (orders || []).forEach(order => {
+  // BỎ QUA các đơn ĐÃ HỦY => không sinh xuất kho
+  const st = (order?.status || '').trim();
+  if (st === 'Đã hủy') return;
+
+  (order.items || []).forEach(it => {
+    logs.push({
+      type: 'out',
+      code: (it.ma || '') + '',
+      name: String(it.ten || ''),
+      qty: Number(it.qty) || 0,
+      date: (order.createdAt || '').slice(0, 10),
+      source: 'order',
+      sourceId: order.id || null
+    });
+  });
+});
+
+  lsSet(LS_STOCK_LOGS, logs);
+}
+
+            function INV_aggregateInOutByCodeInRange(fromDate, toDate) {
+                const logs = lsGet(LS_STOCK_LOGS, []);
+                const agg = new Map();
+                const from = fromDate ? new Date(fromDate) : null;
+                const to = toDate ? new Date(toDate) : null;
+                if (to) to.setHours(23, 59, 59, 999);
+
+                logs.forEach(l => {
+                    const d = new Date(l.date);
+                    if (isNaN(d.getTime())) return;
+                    if (from && d < from) return;
+                    if (to && d > to) return;
+
+                    const key = (String(l.code || '').trim()) || norm(l.name);
+                    if (!agg.has(key)) agg.set(key, { in: 0, out: 0 });
+                    if (l.type === 'in') agg.get(key).in += Number(l.qty) || 0;
+                    if (l.type === 'out') agg.get(key).out += Number(l.qty) || 0;
+                });
+
+                return agg;
+            }
+            /* === INVOICES: dùng select ràng buộc admin_products (ổn định, không tràn comment) === */
+            (function INVOICES_PRODUCT_SELECT() {
+                const EXCLUDE_HIDDEN = true;              // đặt false nếu muốn hiển thị cả SP đang ẩn
+                const LS_ADMIN_PRODUCTS = 'admin_products';
+                const q = (id) => document.getElementById(id);
+
+                function getAdminProducts() {
+                    try { return JSON.parse(localStorage.getItem(LS_ADMIN_PRODUCTS) || '[]'); }
+                    catch (e) { return []; }
+                }
+
+                function fillProductSelect(selectEl) {
+                    if (!selectEl) return;
+                    const current = selectEl.value || '';
+                    selectEl.innerHTML = ''; // clear
+
+                    const def = document.createElement('option');
+                    def.value = '';
+                    def.textContent = '— Chọn sản phẩm —';
+                    selectEl.appendChild(def);
+
+                    const items = (getAdminProducts() || []).filter(p => EXCLUDE_HIDDEN ? !p.hidden : true);
+                    items.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.ma || '';                         // value = MÃ (khóa chuẩn)
+                        opt.textContent = `[${p.ma || ''}] ${p.ten || ''}`;
+                        opt.dataset.ten = p.ten || '';
+                        selectEl.appendChild(opt);
+                    });
+
+                    // cố gắng khôi phục giá trị cũ nếu còn tồn tại
+                    if (current) selectEl.value = current;
+                }
+
+                function wireAutoFillPrice(selectId, priceInputId) {
+                    const sel = q(selectId);
+                    if (!sel) return;
+                    // build options mỗi lần wire (an toàn khi DOM thay đổi)
+                    fillProductSelect(sel);
+
+                    if (sel.dataset.ipsBound === '1') return; // tránh gắn nhiều lần
+                    sel.addEventListener('change', () => {
+                        const ma = sel.value;
+                        const ten = sel.options[sel.selectedIndex]?.dataset.ten || '';
+                        const lastCost = (typeof PR_getCostFromInvoicesByCode === 'function')
+                            ? PR_getCostFromInvoicesByCode(ma, ten)
+                            : 0;
+
+                        const priceEl = q(priceInputId);
+                        if (priceEl) {
+                            priceEl.value = lastCost ? (Invoices_formatVND(lastCost).replace(' VNĐ', '')) : '';
+                            // bắn 'input' để trigger tính tổng/preview
+                            priceEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
+                    sel.dataset.ipsBound = '1';
+                }
+
+                function refreshAllSelects() {
+                    const a = q('invoices-product-name');
+                    const b = q('invoices-edit-name');
+                    if (a && a.tagName.toLowerCase() === 'select') fillProductSelect(a);
+                    if (b && b.tagName.toLowerCase() === 'select') fillProductSelect(b);
+                }
+
+                // Hook vào renderFromStore để mỗi lần sản phẩm thay đổi thì select cũng cập nhật
+                (function hookRenderFromStore() {
+                    const original = window.renderFromStore;
+                    if (typeof original === 'function') {
+                        window.renderFromStore = function (...args) {
+                            const r = original.apply(this, args);
+                            try { refreshAllSelects(); } catch (e) { }
+                            return r;
+                        };
+                    }
+                })();
+
+                // Nếu admin_products thay đổi ở TAB KHÁC => cũng refresh
+                window.addEventListener('storage', (e) => {
+                    if (e.key === LS_ADMIN_PRODUCTS) refreshAllSelects();
+                });
+
+                // Patch mở modal TẠO: sau khi mở, fill select + auto-fill giá khi chọn
+                (function patchOpenCreate() {
+                    const orig = window.Invoices_openCreateModal;
+                    if (typeof orig !== 'function') return;
+                    window.Invoices_openCreateModal = function () {
+                        orig();
+                        wireAutoFillPrice('invoices-product-name', 'invoices-product-price');
+                        const sel = q('invoices-product-name');
+                        if (sel) { sel.value = ''; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+                    };
+                })();
+
+                // Patch mở modal SỬA: fill select, set đúng mã SP của phiếu, gắn auto-fill (không override giá đang có)
+                (function patchEdit() {
+                    const orig = window.Invoices_edit;
+                    if (typeof orig !== 'function') return;
+                     window.Invoices_edit = function (id) {
+    // ⛔ Guard trước khi mở modal
+    const inv = (JSON.parse(localStorage.getItem('invoices') || '[]') || [])
+                  .find(i => String(i.id) === String(id));
+    if (String(inv?.status || '') === 'Hoàn thành') {
+      alert('❌ Phiếu đã hoàn thành, không thể sửa.');
+      return;
+    }
+                        orig(id);
+                        const sel = q('invoices-edit-name');
+                        if (!sel || sel.tagName.toLowerCase() !== 'select') return;
+
+                        fillProductSelect(sel);
+                        try {
+                            const inv = (JSON.parse(localStorage.getItem('invoices') || '[]') || []).find(i => i.id === id);
+                            const ma = inv?.products?.[0]?.ma || '';
+                            if (ma) sel.value = ma;
+                        } catch (e) { }
+
+                        wireAutoFillPrice('invoices-edit-name', 'invoices-edit-price');
+                    };
+                })();
+
+                // Khởi tạo khi DOM sẵn sàng (trường hợp mở modal ngay sau load)
+                document.addEventListener('DOMContentLoaded', () => {
+                    wireAutoFillPrice('invoices-product-name', 'invoices-product-price');
+                    wireAutoFillPrice('invoices-edit-name', 'invoices-edit-price');
+                });
+            })();
+
+            // ===== Dropdown lọc loại từ admin_products =====
+            function INV_loadFilterTypeOptions() {
+  const sel = q('inv-filter-type');
+  if (!sel) return;
+
+  const products = lsGet(LS_ADMIN_PRODUCTS, []);
+  const visibleCat = new Set(CAT_getVisibleCategoryNames().map(n => String(n).trim().toLowerCase()));
+
+  const set = new Set(
+    products
+      .map(p => String(p.loai || '').trim())
+      .filter(loai => loai && visibleCat.has(loai.trim().toLowerCase()))
+  );
+
+  sel.innerHTML = '<option value="">Tất cả loại</option>';
+  [...set].sort().forEach(loai => {
+    const opt = document.createElement('option');
+    opt.value = loai; opt.textContent = loai;
+    sel.appendChild(opt);
+  });
+}
+
+
+
+            // ===== Render bảng popup tồn kho (dùng tên hiển thị) =====
+            function INV_renderInventory(fromDate, toDate) {
+                const tbody = q('inv-product-list');
+                if (!tbody) return;
+                while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+                const inv = lsGet(LS_INVENTORY, []);
+                const adminProducts = lsGet(LS_ADMIN_PRODUCTS, []);
+                const aggRange = INV_aggregateInOutByCodeInRange(fromDate, toDate);   // theo bộ lọc
+                const aggAll = INV_aggregateInOutByCodeInRange(null, null);         // toàn thời gian
+                const selectedType = (q('inv-filter-type')?.value || '').trim().toLowerCase();
+
+                inv.forEach(p => {
+                    const ap = adminProducts.find(a =>
+                        String(a.ma || '').trim().toLowerCase() === String(p.ma || '').trim().toLowerCase()
+                    ) || adminProducts.find(a => norm(a.ten) === norm(p.ten));
+                    const loai = ap ? (ap.loai || '') : '';
+                    if (selectedType && loai.trim().toLowerCase() !== selectedType) return;
+
+                    const key = (String(p.ma || '').trim()) || norm(p.ten);
+
+                    const r = aggRange.get(key) || { in: 0, out: 0 }; // Nhập-Xuất theo lọc
+                    const a = aggAll.get(key) || { in: 0, out: 0 }; // All-time cho Tồn kho
+                    const tonAll = Math.max(0, a.in - a.out);
+
+                    const tr = document.createElement('tr');
+                    const statusHtml = tonAll < 50
+                        ? '<span class="text-red-600 font-semibold">Sắp hết hàng</span>'
+                        : '<span class="text-green-600">Còn hàng</span>';
+
+                    tr.innerHTML = `
+      <td class="p-3 border-b">${p.ma || ''}</td>
+      <td class="p-3 border-b">${p.hienThiTen || p.ten || ''}</td>
+      <td class="p-3 border-b">${loai}</td>
+      <td class="p-3 border-b">${tonAll}</td>
+      <td class="p-3 border-b">${statusHtml}</td>
+      <td class="p-3 border-b">${(r.in || 0)} - ${(r.out || 0)}</td>
+    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            // ===== Áp khoảng lọc và lưu lại tonKho/nhapXuatTon trong storage (tuỳ chọn) =====
+            function INV_applyRangeToInventoryStore(fromDate, toDate) {
+                const inv = lsGet(LS_INVENTORY, []);
+                const aggRange = INV_aggregateInOutByCodeInRange(fromDate, toDate); // chỉ để hiển thị
+                const aggAll = INV_aggregateInOutByCodeInRange(null, null);       // dùng cho tồn kho
+
+                inv.forEach(p => {
+                    const key = (String(p.ma || '').trim()) || norm(p.ten);
+                    const r = aggRange.get(key) || { in: 0, out: 0 };
+                    const a = aggAll.get(key) || { in: 0, out: 0 };
+
+                    // Chỉ lưu chuỗi nhập-xuất của KHOẢNG LỌC để hiện trong UI modal
+                    p.nhapXuatTon = `${r.in} - ${r.out}`;
+
+                    // Luôn lưu tồn kho theo TOÀN THỜI GIAN để nơi khác (bảng sản phẩm) đọc ra luôn đúng
+                    p.tonKho = Math.max(0, a.in - a.out);
+                });
+
+                lsSet(LS_INVENTORY, inv);
+            }
+
+
+            // ===== Open/Close modal =====
+            function INV_openInventoryModal() {
+                // đồng bộ danh sách từ admin_products (add mới + cập nhật tên hiển thị)
+                INV_syncAdminProductsToInventory();
+                // rebuild logs rồi render mặc định 30 ngày
+                INV_rebuildStockLogs();
+                INV_loadFilterTypeOptions();
+
+                const now = new Date();
+                const past = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                const fmt = d => d.toISOString().slice(0, 10);
+                const from = fmt(past), to = fmt(now);
+                if (q('inv-from-date')) q('inv-from-date').value = from;
+                if (q('inv-to-date')) q('inv-to-date').value = to;
+
+                // cập nhật store theo khoảng + render UI
+                INV_applyRangeToInventoryStore(from, to);
+                INV_renderInventory(from, to);
+
+                const m = q('inventory-modal');
+                m.classList.remove('hidden'); m.classList.add('flex');
+            }
+            function INV_closeInventoryModal() {
+                const m = q('inventory-modal');
+                m.classList.add('hidden'); m.classList.remove('flex');
+            }
+
+            // ===== Bind nút trong modal =====
+            document.addEventListener('DOMContentLoaded', () => {
+                const esc = (e) => { if (e.key === 'Escape') { INV_closeInventoryModal(); document.removeEventListener('keydown', esc); } };
+
+                const btnFilter = q('inv-btn-filter');
+                if (btnFilter) {
+                    btnFilter.addEventListener('click', () => {
+                        const from = q('inv-from-date')?.value || '';
+                        const to = q('inv-to-date')?.value || '';
+                        INV_applyRangeToInventoryStore(from, to);
+                        INV_renderInventory(from, to);
+                    });
+                }
+
+                const btnLast30 = q('inv-btn-last30');
+                if (btnLast30) {
+                    btnLast30.addEventListener('click', () => {
+                        const now = new Date();
+                        const past = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        const fmt = d => d.toISOString().slice(0, 10);
+                        const from = fmt(past), to = fmt(now);
+                        if (q('inv-from-date')) q('inv-from-date').value = from;
+                        if (q('inv-to-date')) q('inv-to-date').value = to;
+                        INV_applyRangeToInventoryStore(from, to);
+                        INV_renderInventory(from, to);
+                    });
+                }
+
+                const selType = q('inv-filter-type');
+                if (selType) {
+                    selType.addEventListener('change', () => {
+                        const from = q('inv-from-date')?.value || '';
+                        const to = q('inv-to-date')?.value || '';
+                        INV_renderInventory(from, to);
+                    });
+                }
+
+                document.addEventListener('keydown', esc);
+            });
+
+            // ===== Expose =====
+            window.INV_openInventoryModal = INV_openInventoryModal;
+            window.INV_closeInventoryModal = INV_closeInventoryModal;
+            window.INV__syncAdminProductsToInventory = INV_syncAdminProductsToInventory;
+            window.INV__rebuildStockLogs = INV_rebuildStockLogs;
+            window.INV__applyRangeToInventoryStore = INV_applyRangeToInventoryStore;
+        })();
+        /* ================== ORDERS (POPUP) ================== */
+        (function () {
+            const q = (id) => document.getElementById(id);
+            const norm = (s) => String(s || '').trim().toLowerCase();
+
+            // Key storage (đồng bộ với phần khác): 
+            const LS_ORDERS = 'admin_orders';
+
+            function ORD_lsGetAll() {
+                try { return JSON.parse(localStorage.getItem(LS_ORDERS) || '[]'); }
+                catch (e) { return []; }
+            }
+            function ORD_lsSaveAll(arr) {
+                localStorage.setItem(LS_ORDERS, JSON.stringify(arr || []));
+            }
+
+            function ORD_formatVND(n) { return Number(n || 0).toLocaleString('vi-VN') + 'đ'; }
+            function ORD_fmtDate(iso) {
+                const d = new Date(iso);
+                if (isNaN(d)) return '';
+                return d.toLocaleDateString('vi-VN');
+            }
+
+            // ===== Tránh trùng tên (CHỈ MỤC ĐÍCH HIỂN THỊ), không đổi dữ liệu gốc =====
+            // Ví dụ: nếu trong 1 danh sách hiển thị có trùng "VGA 1660" thì hiển thị 
+            // "VGA 1660 (orders)" cho các bản còn lại.
+            function ORD_ensureUniqueDisplayNames(items, pickFn) {
+                const seen = new Map(); // name -> count
+                return items.map(it => {
+                    const base = String(pickFn(it) || '');
+                    const k = norm(base);
+                    const count = (seen.get(k) || 0) + 1;
+                    seen.set(k, count);
+                    if (count === 1) return base;
+                    // từ cái trùng trở đi, thêm (orders), (orders-2), ...
+                    return count === 2 ? `${base} (orders)` : `${base} (orders-${count - 1})`;
+                });
+            }
+
+            // ===== Render list
+            const ordTbody = q('ord-tbody');
+
+            function ORD_selectColorClass(st) {
+                if (st === 'Mới đặt') return 'sel--new';
+                if (st === 'Đã xử lý') return 'sel--proc';
+                if (st === 'Đã hủy') return 'sel--cancel';
+                if (st === 'Đã giao') return 'sel--shipped';
+                return '';
+            }
+            function ORD_applySelectColor(sel) {
+                sel.classList.remove('sel--new', 'sel--proc', 'sel--cancel', 'sel--shipped');
+                sel.classList.add(ORD_selectColorClass(sel.value));
+            }
+            // ===== Đồng bộ tên KH từ admin_users (prefer userId, fallback name) =====
+            const USR_LS_KEY = 'admin_users';
+            function ORD_getUsers() {
+                try { return JSON.parse(localStorage.getItem(USR_LS_KEY) || '[]'); }
+                catch (e) { return []; }
+            }
+            let ORD__usersByName = null;
+            let ORD__usersById = null;
+
+            function ORD_usersByName() {
+                if (ORD__usersByName) return ORD__usersByName;
+                ORD__usersByName = new Map();
+                (ORD_getUsers() || []).forEach(u => {
+                    const key = String(u?.name || '').trim().toLowerCase();
+                    if (key) ORD__usersByName.set(key, u);
+                });
+                return ORD__usersByName;
+            }
+            function ORD_usersById() {
+                if (ORD__usersById) return ORD__usersById;
+                ORD__usersById = new Map();
+                (ORD_getUsers() || []).forEach(u => {
+                    if (u?.id) ORD__usersById.set(String(u.id), u);
+                });
+                return ORD__usersById;
+            }
+
+            /** Trả về tên account hiển thị ưu tiên theo userId, sau đó fallback theo name */
+            function ORD_resolveCustomerName(order) {
+                // Ưu tiên bắt theo userId nếu có
+                const uid = order?.customerRef?.userId || order?.customer?.userId;
+                if (uid) {
+                    const u = ORD_usersById().get(String(uid));
+                    if (u?.name) return u.name;
+                }
+                // Fallback theo name
+                const rawName = order?.customerRef?.name || order?.customer?.name || '';
+                const key = String(rawName).trim().toLowerCase();
+                const uByName = ORD_usersByName().get(key);
+                return uByName?.name || (rawName || '-');
+            }
+
+            // Refresh cache và render khi admin_users thay đổi ở tab khác
+            window.addEventListener('storage', (e) => {
+                if (e.key === USR_LS_KEY) {
+                    ORD__usersByName = null;
+                    ORD__usersById = null;
+                    ORD_renderTable(ORD_lsGetAll()); // dùng hàm get all sẵn có của bạn
+                }
+            });
+
+            function ORD_renderTable(list) {
+                while (ordTbody.firstChild) ordTbody.removeChild(ordTbody.firstChild);
+                if (!list.length) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td colspan="6" class="p-6 text-center text-gray-500">Chưa có đơn nào.</td>`;
+                    ordTbody.appendChild(tr);
+                    return;
+                }
+
+                list.forEach((o) => {                      // <-- tính ở đây
+                    const displayName = ORD_resolveCustomerName(o);
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b';
+                    tr.innerHTML = `
+      <td class="p-3 font-medium">${o.id || ''}</td>
+      <td class="p-3">
+        <div class="font-semibold">${displayName}</div>
+        <div class="text-gray-500">${o?.customer?.phone || o?.shipping?.phone || ''}</div>
+      </td>
+      <td class="p-3">${ORD_fmtDate(o.createdAt)}</td>
+      <td class="p-3">${ORD_formatVND(o.total || 0)}</td>
+      <td class="p-3">
+        <select class="status-select ${ORD_selectColorClass(o.status)}" data-id="${o.id || ''}" title="Đổi tình trạng">
+          <option class="opt-new"    value="Mới đặt"  ${o.status === 'Mới đặt' ? 'selected' : ''}>Mới đặt</option>
+          <option class="opt-proc"   value="Đã xử lý" ${o.status === 'Đã xử lý' ? 'selected' : ''}>Đã xử lý</option>
+          <option class="opt-cancel" value="Đã hủy"   ${o.status === 'Đã hủy' ? 'selected' : ''}>Đã hủy</option>
+          <option class="opt-shipped"value="Đã giao"  ${o.status === 'Đã giao' ? 'selected' : ''}>Đã giao</option>
+        </select>
+      </td>
+      <td class="p-3">
+        <button class="text-blue-600 hover:underline" data-role="detail" data-id="${o.id || ''}">
+          <i class="fas fa-eye mr-1"></i> Chi tiết
+        </button>
+      </td>
+    `;
+                    ordTbody.appendChild(tr);
+                });
+
+                // Gắn events: đổi trạng thái + xem chi tiết
+                ordTbody.querySelectorAll('select.status-select').forEach(sel => {
+                    sel.addEventListener('change', () => ORD_updateStatus(sel.dataset.id, sel.value, sel));
+                });
+                ordTbody.querySelectorAll('button[data-role="detail"]').forEach(btn => {
+                    btn.addEventListener('click', () => ORD_openDetail(btn.dataset.id));
+                });
+            }
+
+            function ORD_updateStatus(id, value, selEl) {
+                const all = ORD_lsGetAll();
+                const idx = all.findIndex(o => o.id === id);
+                if (idx === -1) return;
+                all[idx].status = value;
+                ORD_lsSaveAll(all);
+                if (selEl) ORD_applySelectColor(selEl);
+            }
+
+            // ===== Filters
+            function ORD_filter() {
+                const s = q('ord-start')?.value || '';
+                const e = q('ord-end')?.value || '';
+                const st = q('ord-status')?.value || '';
+                const all = ORD_lsGetAll();
+
+                const filtered = all.filter(o => {
+                    // ngày
+                    if (s || e) {
+                        const d = new Date(o.createdAt || 0);
+                        if (isNaN(d)) return false;
+                        if (s) {
+                            const sd = new Date(s + 'T00:00:00'); if (d < sd) return false;
+                        }
+                        if (e) {
+                            const ed = new Date(e + 'T23:59:59'); if (d > ed) return false;
+                        }
+                    }
+                    // trạng thái
+                    if (st && o.status !== st) return false;
+                    return true;
+                });
+
+                ORD_renderTable(filtered);
+            }
+
+            // ===== Detail modal
+            const detModal = q('orders-detail-modal');
+            const detBox = q('ord-detail-box');
+
+            function ORD_openDetail(id) {
+  const all = ORD_lsGetAll();
+  const o = all.find(x => String(x.id) === String(id));
+  if (!o) return;
+
+  const C = {
+    name: o?.shipping?.receiverName || o?.customerRef?.name || o?.customer?.name || '',
+    phone: o?.shipping?.phone || o?.customer?.phone || '',
+    address: o?.shipping?.address || o?.customer?.address || ''
+  };
+
+  const items = Array.isArray(o.items) ? o.items : [];
+  const itemNames = ORD_ensureUniqueDisplayNames(items, it => it?.ten || '');
+
+  // --- đọc thông tin thanh toán (an toàn cho đơn cũ)
+  const payMethodRaw = String(o?.payment?.method || 'COD').toUpperCase();
+  const payMethodText = (payMethodRaw === 'ONLINE')
+      ? 'Thanh toán trực tuyến'
+      : 'Thanh toán khi nhận hàng (COD)';
+  const isPaid = !!o?.payment?.paid;
+
+  const rows = items.map((it, i) => `
+    <tr class="border-b">
+      <td class="p-2">${it.ma || ''}</td>
+      <td class="p-2">${itemNames[i]}</td>
+      <td class="p-2 text-right">${ORD_formatVND(it.gia || 0)}</td>
+      <td class="p-2 text-right">${it.qty || 0}</td>
+      <td class="p-2 text-right">${ORD_formatVND((it.gia || 0) * (it.qty || 0))}</td>
+    </tr>
+  `).join('');
+
+  // render khung chi tiết như cũ (CHƯA có dòng thanh toán ở đây)
+  detBox.innerHTML = `
+    <div class="mb-2"><strong>Mã đơn:</strong> ${o.id || ''}</div>
+    <div class="mb-2"><strong>Ngày đặt:</strong> ${ORD_fmtDate(o.createdAt)}</div>
+    <div class="mb-2"><strong>Khách hàng:</strong> ${C.name}</div>
+    <div class="mb-2"><strong>Điện thoại:</strong> ${C.phone}</div>
+    <div class="mb-4"><strong>Địa chỉ:</strong> ${C.address}</div>
+
+    <div class="overflow-x-auto mb-4">
+      <table class="w-full text-left text-sm border">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-2">Mã SP</th>
+            <th class="p-2">Tên</th>
+            <th class="p-2 text-right">Giá</th>
+            <th class="p-2 text-right">SL</th>
+            <th class="p-2 text-right">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="p-2 text-right font-semibold">Tổng cộng</td>
+            <td class="p-2 text-right font-semibold">${ORD_formatVND(o.total || 0)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+
+  // 🔒 Chèn KHỐI THANH TOÁN sau khi set innerHTML để không bị template khác ghi đè
+  const tblWrap = detBox.querySelector('.overflow-x-auto');
+  if (tblWrap) {
+    tblWrap.insertAdjacentHTML('beforebegin', `
+     <div class="mb-2"><strong>Thanh toán:</strong> ${payMethodText}</div>
+    <div class="mb-2">
+      <strong>Trạng thái:</strong>
+      ${
+        isPaid
+          ? '<span class="inline-block ml-2 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">ĐÃ THANH TOÁN</span>'
+          : '<span class="inline-block ml-2 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700 text-CTH">CHƯA THANH TOÁN</span>'
+      }
+    </div>
+    `);
+  }
+
+  detModal.classList.remove('hidden');
+  detModal.classList.add('flex');
+}
+
+
+            function ORD_closeDetail() {
+                detModal.classList.add('hidden');
+                detModal.classList.remove('flex');
+            }
+
+
+            // ===== Open/Close popup
+            function ORD_openOrdersModal() {
+                // mặc định hiển thị tất cả, set mặc định lọc rỗng
+                if (q('ord-start')) q('ord-start').value = '';
+                if (q('ord-end')) q('ord-end').value = '';
+                if (q('ord-status')) q('ord-status').value = '';
+                ORD_renderTable(ORD_lsGetAll());
+                const m = q('orders-modal');
+                m.classList.remove('hidden'); m.classList.add('flex');
+
+                const esc = (e) => { if (e.key === 'Escape') { ORD_closeOrdersModal(); document.removeEventListener('keydown', esc); } };
+                document.addEventListener('keydown', esc);
+            }
+            function ORD_closeOrdersModal() {
+                const m = q('orders-modal');
+                m.classList.add('hidden'); m.classList.remove('flex');
+            }
+
+            // ===== Bind buttons
+            document.addEventListener('DOMContentLoaded', () => {
+                q('ord-btn-filter')?.addEventListener('click', ORD_filter);
+                q('ord-btn-clear')?.addEventListener('click', () => {
+                    if (q('ord-start')) q('ord-start').value = '';
+                    if (q('ord-end')) q('ord-end').value = '';
+                    if (q('ord-status')) q('ord-status').value = '';
+                    ORD_renderTable(ORD_lsGetAll());
+                });
+
+                // Auto-sync màu khi user tự mở select (trường hợp browser nhớ state)
+                ordTbody?.addEventListener('focusin', (e) => {
+                    if (e.target && e.target.classList.contains('status-select')) {
+                        ORD_applySelectColor(e.target);
+                    }
+                });
+            });
+
+            // expose
+            window.ORD_openOrdersModal = ORD_openOrdersModal;
+            window.ORD_closeOrdersModal = ORD_closeOrdersModal;
+            window.ORD_openDetail = ORD_openDetail;
+            window.ORD_closeDetail = ORD_closeDetail;
+        })();
+
+        /* ====== CẤU HÌNH CREDENTIAL CƠ BẢN ======
+            Bạn có thể đổi lại nếu muốn.
+            Mặc định: admin / 123456
+         */
+        const AUTH_USER = 'admin';
+        const AUTH_PASS = '123456';
+        const AUTH_KEY = 'admin_authed'; // flag trong localStorage
+
+        const $ = (id) => document.getElementById(id);
+
+        // ... giữ nguyên các const AUTH_*, $ = (id)=>document.getElementById(id);
+
+        function isLoginOpen() {
+            const m = $('#login-modal');
+            return m ? !m.classList.contains('hidden') : false;
+        }
+        function ensureLoginModal() {
+            if (document.getElementById('login-modal')) return true;
+            // (Phòng hờ) nếu chưa có vì lý do inject động, tạo modal tối giản để không vỡ luồng
+            const wrap = document.createElement('div');
+            wrap.innerHTML = `
+    <div id="login-modal" class="modal-mask hidden items-center justify-center" style="z-index:1000">
+      <div class="modal-content" style="max-width:380px;width:100%;position:relative">
+        <h2 class="text-xl font-bold mb-3 text-center">Đăng nhập Admin</h2>
+        <form id="login-form" class="flex flex-col gap-3">
+          <div class="flex flex-col gap-1">
+            <label for="login-user" class="text-sm text-gray-600">Tài khoản</label>
+            <input id="login-user" type="text" class="border p-2 rounded" placeholder="admin" required>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label for="login-pass" class="text-sm text-gray-600">Mật khẩu</label>
+            <input id="login-pass" type="password" class="border p-2 rounded" placeholder="••••••" required>
+          </div>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Đăng nhập</button>
+          <div id="login-error" class="text-sm text-red-600 hidden">Sai tài khoản hoặc mật khẩu.</div>
+        </form>
+      </div>
+    </div>`;
+            document.body.appendChild(wrap.firstElementChild);
+            return true;
+        }
+        let _loginRetry = 0;
+        function openLoginModal() {
+            // Nếu DOM còn đang loading, thử lại sau 0ms (tối đa 10 lần) để tránh race-condition
+            if (document.readyState === 'loading' && _loginRetry < 10) {
+                _loginRetry++;
+                return setTimeout(openLoginModal, 0);
+            }
+
+            ensureLoginModal(); // đảm bảo #login-modal tồn tại
+
+            const m = document.getElementById('login-modal');
+            if (!m) {
+                console.warn('[login] #login-modal still not found');
+                return;
+            }
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            m.style.display = 'flex';
+            document.body.classList.add('login-lock');
+            setTimeout(() => document.getElementById('login-user')?.focus(), 50);
+        }
+
+        function closeLoginModal() {
+            const m = $('#login-modal');
+            if (!m) return; // phòng thủ
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+            document.body.classList.remove('login-lock');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem(AUTH_KEY) !== '1') {
+                ensureLoginModal();
+                openLoginModal();
+            }
+            document.addEventListener('keydown', (e) => {
+                if (isLoginOpen() && e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+        });
+
+        // Xủ lý submit đăng nhập
+        (function bindLogin() {
+            const form = $('#login-form');
+            form?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const u = ($('#login-user').value || '').trim();
+                const p = ($('#login-pass').value || '').trim();
+                if (u === AUTH_USER && p === AUTH_PASS) {
+                    localStorage.setItem(AUTH_KEY, '1');
+                    $('#login-error').classList.add('hidden');
+                    closeLoginModal();
+                } else {
+                    $('#login-error').classList.remove('hidden');
+                }
+            });
+        })();
+
+        function forceLogout() {
+            localStorage.removeItem(AUTH_KEY);
+            sessionStorage.removeItem('login_shown'); // để lần mở trang tiếp theo lại hỏi login
+            openLoginModal();
+            return false;
+        }
+
+        window.forceLogout = forceLogout;
+
+        // Nếu bạn muốn chặn mọi API mở modal khác khi chưa đăng nhập,
+        // có thể bọc các hàm mở modal bằng check:
+        const mustLogin = fn => (...args) => {
+            if (localStorage.getItem(AUTH_KEY) !== '1') {
+                openLoginModal();
+                return;
+            }
+            return fn?.(...args);
+        };
+
+        // Trước đây bạn có:
+        // window.openPricingModal = mustLogin(window.openPricingModal);
+        // ...
+
+        // Gắn sự kiện submit sau khi DOM đã sẵn sàng
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('login-form');
+            if (!form) return;
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const u = (document.getElementById('login-user').value || '').trim();
+                const p = (document.getElementById('login-pass').value || '').trim();
+
+                if (u === AUTH_USER && p === AUTH_PASS) {
+                    localStorage.setItem(AUTH_KEY, '1');
+                    document.getElementById('login-error').classList.add('hidden');
+                    closeLoginModal();
+                    // Làm mới trang để mọi hàm mustLogin hoạt động
+                    location.reload();
+                } else {
+                    document.getElementById('login-error').classList.remove('hidden');
+                }
+            });
+        });
+        // ===== USERS POPUP LOGIC (namespaced: USR_) =====
+        (function () {
+            // Storage keys & helpers
+            const LS_USERS_KEY = 'admin_users';
+            const q = (id) => document.getElementById(id);
+
+            function USR_getUserOrders(userId) {
+                try { return JSON.parse(localStorage.getItem('user_orders:' + userId) || '[]'); }
+                catch (e) { return []; }
+            }
+            function USR_countOrdersOfUser(userId) { return USR_getUserOrders(userId).length; }
+
+            function USR_getUsers() {
+                try { return JSON.parse(localStorage.getItem(LS_USERS_KEY) || '[]'); }
+                catch (e) { return []; }
+            }
+            function USR_saveUsers(arr) {
+                localStorage.setItem(LS_USERS_KEY, JSON.stringify(arr || []));
+            }
+
+            // DOM refs
+            const modal = q('users-modal');
+            const tbody = q('usr-tbody');
+            const searchInp = q('usr-search');
+            const flash = q('usr-flash');
+
+            // Render
+            function USR_render(list) {
+                while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+                if (!Array.isArray(list) || list.length === 0) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td colspan="8" class="p-4 text-gray-500 text-center">Chưa có người dùng.</td>`;
+                    tbody.appendChild(tr);
+                    return;
+                }
+
+                list.forEach(u => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b';
+
+                    const orders = USR_countOrdersOfUser(u.id);
+
+                    tr.innerHTML = `
+        <td class="p-3">${u.id || ''}</td>
+        <td class="p-3">${u.name || '-'}</td>
+        <td class="p-3">${u.username || '-'}</td>
+        <td class="p-3">${u.email || '-'}</td>
+        <td class="p-3">${u.date || '-'}</td>
+        <td class="p-3">${orders}</td>
+        <td class="p-3">
+          <span class="${u.active ? 'text-green-600' : 'text-red-600'} font-semibold">
+            ${u.active ? 'Hoạt động' : 'Đã khóa'}
+          </span>
+        </td>
+        <td class="p-3 space-x-2">
+          <button class="text-blue-500 hover:text-blue-700" title="Reset mật khẩu" data-role="reset" data-id="${u.id}">
+            <i class="fas fa-key"></i>
+          </button>
+          ${u.active
+                            ? `<button class="text-red-500 hover:text-red-700" title="Khóa tài khoản" data-role="toggle" data-active="0" data-id="${u.id}"><i class="fas fa-lock"></i></button>`
+                            : `<button class="text-green-500 hover:text-green-700" title="Mở khóa tài khoản" data-role="toggle" data-active="1" data-id="${u.id}"><i class="fas fa-unlock"></i></button>`
+                        }
+        </td>
+      `;
+                    tbody.appendChild(tr);
+                });
+
+                // Gắn action handlers (event delegation)
+                // gắn 1 lần sau khi tạo tbody, không dùng once
+                tbody.addEventListener('click', USR_onActionClick);
+
+            }
+
+            function USR_onActionClick(e) {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const role = btn.dataset.role;
+                const id = btn.dataset.id;
+                if (!id) return;
+
+                if (role === 'reset') {
+                    USR_resetPassword(id);
+                } else if (role === 'toggle') {
+                    const toActive = btn.dataset.active === '1';
+                    USR_toggleUser(id, toActive);
+                }
+            }
+
+            function USR_refresh() {
+                const data = USR_getUsers();
+                const kw = (searchInp?.value || '').toLowerCase();
+                const filtered = kw
+                    ? data.filter(u =>
+                        (u.name || '').toLowerCase().includes(kw) ||
+                        (u.email || '').toLowerCase().includes(kw) ||
+                        (u.username || '').toLowerCase().includes(kw)
+                    )
+                    : data;
+                USR_render(filtered);
+            }
+
+            // Actions
+            function USR_resetPassword(id) {
+                const users = USR_getUsers();
+                const u = users.find(x => x.id === id);
+                if (!u) return;
+
+                if (confirm(`Xác nhận reset mật khẩu cho ${u.name || u.username}?`)) {
+                    u.password = '123456';
+                    USR_saveUsers(users);
+                    if (flash) {
+                        flash.textContent = `✅ Đã reset mật khẩu cho ${u.username} về "123456"`;
+                        setTimeout(() => flash.textContent = '', 2000);
+                    }
+                }
+            }
+
+            function USR_toggleUser(id, toActive) {
+                const users = USR_getUsers();
+                const u = users.find(x => x.id === id);
+                if (!u) return;
+                const action = toActive ? 'mở khóa' : 'khóa';
+                if (confirm(`Bạn có chắc muốn ${action} tài khoản ${u.username}?`)) {
+                    u.active = !!toActive;
+                    USR_saveUsers(users);
+                    USR_refresh();
+                }
+            }
+
+            // --- THAY THẾ HÀM USR_openUsersModal CŨ BẰNG BỘ ĐÔI SAU ---
+
+            // Phần hiển thị thật sự (không kiểm tra đăng nhập ở đây)
+            function USR_openUsersModalCore() {
+                // hiển thị danh sách
+                USR_refresh();
+                if (searchInp) searchInp.value = '';
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+
+                // ESC để đóng
+                const esc = (e) => {
+                    if (e.key === 'Escape') {
+                        USR_closeUsersModal();
+                        document.removeEventListener('keydown', esc);
+                    }
+                };
+                document.addEventListener('keydown', esc);
+            }
+
+            // Hàm public: chỉ kiểm tra login RỒI gọi core (không tự gọi lại chính nó)
+            function USR_openUsersModal() {
+                // Nếu bạn có cơ chế đăng nhập, check trực tiếp flag
+                if (localStorage.getItem(AUTH_KEY) !== '1') {
+                    openLoginModal();
+                    return;
+                }
+                USR_openUsersModalCore();
+            }
+
+            // Cập nhật export (giữ nguyên close)
+            window.USR_openUsersModal = USR_openUsersModal;
+            window.USR_closeUsersModal = USR_closeUsersModal;
+
+
+            // Search live
+            searchInp?.addEventListener('input', USR_refresh);
+
+            // Live update khi tab khác thay đổi users
+            window.addEventListener('storage', (e) => {
+                if (e.key === LS_USERS_KEY) USR_refresh();
+            });
+
+        })();
+        // Nếu chưa có pricing_data, đảm bảo không crash:
+        (function ensurePricingDataExists() {
+            const raw = localStorage.getItem(LS_PRICING_DATA);
+            if (!raw) {
+                localStorage.setItem(LS_PRICING_DATA, JSON.stringify({ rows: [], savedAt: new Date().toISOString() }));
+            }
+        })();
+        // Chạy 1 lần khi load trang Admin (ví dụ đặt cuối file)
+        (function migrateOrderCustomerRef() {
+            const LS_ORDERS = 'admin_orders';
+            let orders = [];
+            try { orders = JSON.parse(localStorage.getItem(LS_ORDERS) || '[]'); } catch (e) { }
+            if (!Array.isArray(orders) || !orders.length) return;
+
+            const usersByName = new Map();
+            (ORD_getUsers() || []).forEach(u => {
+                const k = String(u?.name || '').trim().toLowerCase();
+                if (k && u?.id) usersByName.set(k, String(u.id));
+            });
+
+            let changed = false;
+            orders = orders.map(o => {
+                if (o?.customerRef?.userId) return o; // đã có userId
+                const rawName = o?.customerRef?.name || o?.customer?.name || '';
+                const uid = usersByName.get(String(rawName).trim().toLowerCase());
+                if (uid) {
+                    changed = true;
+                    return {
+                        ...o,
+                        customerRef: {
+                            ...(o.customerRef || {}),
+                            userId: uid,
+                            name: rawName
+                        }
+                    };
+                }
+                return o;
+            });
+
+            if (changed) {
+                localStorage.setItem(LS_ORDERS, JSON.stringify(orders));
+                console.info('[migrate] bổ sung customerRef.userId cho admin_orders');
+            }
+        })();
+        function USR_countOrdersOfUser(userId) {
+            // gốc: chỉ đếm user_orders
+            const countUserSide = USR_getUserOrders(userId).length;
+
+            // cộng thêm số đơn admin_orders match theo userId
+            let countAdminSide = 0;
+            try {
+                const adminOrders = JSON.parse(localStorage.getItem('admin_orders') || '[]');
+                countAdminSide = adminOrders.filter(o =>
+                    String(o?.customerRef?.userId || '') === String(userId)
+                ).length;
+            } catch (e) { }
+
+            return countUserSide + countAdminSide;
+        }
+        // ... bên trong (function(){ ... }) của USERS POPUP
+
+        function USR_closeUsersModal() {
+  const m = document.getElementById('users-modal');
+  if (!m) return;
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+
+  // (tuỳ chọn) dọn dẹp UI nhẹ
+  const flash = document.getElementById('usr-flash');
+  if (flash) flash.textContent = '';
+  const searchInp = document.getElementById('usr-search');
+  // nếu muốn giữ từ khoá, hãy bỏ dòng dưới
+  // if (searchInp) searchInp.value = '';
+}
+
+
+
+        // ===== THANH TOÁN: helpers (GLOBAL) =====
+        function ORD_sumPayments(o) {
+            const list = Array.isArray(o?.paymentHistory) ? o.paymentHistory : [];
+            return list.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+        }
+
+        /** Ghi nhận thanh toán cho một đơn (lưu vào admin_orders) */
+        function ORD_addPayment(orderId, { amount, method, transId, note }) {
+            amount = Math.max(0, Number(amount) || 0);
+            if (!amount) return false;
+
+            let all = [];
+            try { all = JSON.parse(localStorage.getItem('admin_orders') || '[]'); } catch (e) { all = []; }
+
+            const idx = all.findIndex(o => String(o.id) === String(orderId));
+            if (idx === -1) return false;
+
+            const o = all[idx];
+            if (!Array.isArray(o.paymentHistory)) o.paymentHistory = [];
+
+            const entry = {
+                at: new Date().toISOString(),
+                amount,
+                method: method || (o?.payment?.method || 'Khác'),
+                transId: transId || '',
+                note: note || ''
+            };
+            o.paymentHistory.push(entry);
+
+            const paidAmount = ORD_sumPayments(o);
+            o.paidAmount = paidAmount;
+            o.payment = {
+                ...(o.payment || { method: 'COD', paid: false }),
+                paid: paidAmount >= (Number(o.total) || 0)
+            };
+
+            all[idx] = o;
+            localStorage.setItem('admin_orders', JSON.stringify(all));
+            return true;
+        }
+        function Invoices__refreshProductsView() {
+            try {
+                window.INV__syncAdminProductsToInventory?.();
+                window.INV__rebuildStockLogs?.();
+                window.INV__applyRangeToInventoryStore?.('', ''); // all-time
+            } catch (e) { console.warn('[Invoices__refreshProductsView]', e); }
+            renderFromStore();
+        }
+        function PR_getCostFromInvoicesByCode(ma, fallbackName) {
+            const invoices = PR_lsGetInvoices();
+            let latest = null;
+            for (const inv of invoices || []) {
+                const invDateMs = new Date(inv?.date || 0).getTime() || 0;
+                for (const p of (inv?.products || [])) {
+                    const match = (String(p.ma || '').trim().toLowerCase() === String(ma || '').trim().toLowerCase())
+                        || (!p.ma && String(p.name || '').trim().toLowerCase() === String(fallbackName || '').trim().toLowerCase());
+                    if (!match) continue;
+                    const unit = Number.isFinite(+p.price) && +p.price > 0
+                        ? Math.round(+p.price)
+                        : (Number.isFinite(+p.total) && Number.isFinite(+p.quantity) && +p.quantity > 0
+                            ? Math.round(+p.total / +p.quantity)
+                            : 0);
+                    if (!latest || invDateMs > latest.invDateMs) latest = { cost: unit, invDateMs };
+                }
+            }
+            return latest ? latest.cost : 0;
+        }
+        /* === INVOICES: Nâng cấp input -> select ràng buộc vào admin_products === */
+        (function () {
+            const EXCLUDE_HIDDEN = true; // đặt false nếu muốn hiện cả sản phẩm đang ẩn
+
+            // Lấy danh sách SP từ admin_products
+            function AP_getAll() {
+                try { return JSON.parse(localStorage.getItem('admin_products') || '[]'); }
+                catch (e) { return []; }
+            }
+
+            // Xây option cho <select>
+            function buildProductOptions(selectEl) {
+                if (!selectEl) return;
+                selectEl.innerHTML = '';
+                const def = document.createElement('option');
+                def.value = '';
+                def.textContent = '— Chọn sản phẩm —';
+                selectEl.appendChild(def);
+
+                const items = (AP_getAll() || []).filter(p => EXCLUDE_HIDDEN ? !p.hidden : true);
+                items.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.ma || '';                          // value = MÃ (khóa cứng chống nhập bừa)
+                    opt.textContent = `[${p.ma || ''}] ${p.ten || ''}`;
+                    opt.dataset.ten = p.ten || '';
+                    selectEl.appendChild(opt);
+                });
+            }
+
+            // Thay input#id thành select#id; nếu đã là select thì chỉ build lại options
+            function replaceInputWithSelect(id) {
+                const oldEl = document.getElementById(id);
+                if (!oldEl) return null;
+
+                if (oldEl.tagName.toLowerCase() === 'select') {
+                    buildProductOptions(oldEl);
+                    return oldEl;
+                }
+
+                const sel = document.createElement('select');
+                sel.id = id;
+                sel.name = oldEl.name || id;
+                sel.className = oldEl.className || 'border p-2 rounded w-full';
+                sel.style.cssText = oldEl.style?.cssText || '';
+                buildProductOptions(sel);
+
+                // Giữ chỗ
+                oldEl.parentNode.replaceChild(sel, oldEl);
+                return sel;
+            }
+
+            // Tự gợi ý ĐƠN GIÁ NHẬP gần nhất khi chọn SP (dùng helper bạn đã có)
+            function hookAutoFillLastCost(selectEl, priceInputId) {
+                if (!selectEl) return;
+                selectEl.addEventListener('change', () => {
+                    const sel = selectEl;
+                    const ma = sel.value;
+                    const ten = sel.options[sel.selectedIndex]?.dataset.ten || '';
+                    // bạn đã có hàm này ở cuối file
+                    const lastCost = typeof PR_getCostFromInvoicesByCode === 'function'
+                        ? PR_getCostFromInvoicesByCode(ma, ten)
+                        : 0;
+
+                    const priceEl = document.getElementById(priceInputId);
+                    if (priceEl) {
+                        // Invoices_formatVND đã có sẵn
+                        priceEl.value = lastCost ? (Invoices_formatVND(lastCost).replace(' VNĐ', '')) : '';
+                        // Bắn event 'input' để trigger hàm tính tổng đang bind sẵn
+                        priceEl.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+            }
+
+            // Làm mới options khi sản phẩm thay đổi trong CÙNG TAB
+            function refreshAllSelects() {
+                const a = document.getElementById('invoices-product-name');
+                const b = document.getElementById('invoices-edit-name');
+                if (a && a.tagName.toLowerCase() === 'select') buildProductOptions(a);
+                if (b && b.tagName.toLowerCase() === 'select') buildProductOptions(b);
+            }
+
+            // Hook vào renderFromStore để mỗi lần thêm/sửa/xóa SP thì refresh dropdown
+            (function hookRenderFromStore() {
+                const original = window.renderFromStore;
+                if (typeof original === 'function') {
+                    window.renderFromStore = function (...args) {
+                        const r = original.apply(this, args);
+                        try { refreshAllSelects(); } catch (e) { }
+                        return r;
+                    };
+                }
+            })();
+
+            // Nếu admin_products thay đổi ở TAB KHÁC => cũng refresh
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'admin_products') refreshAllSelects();
+            });
+
+            // Patch Invoices_edit để set giá trị theo MA (không phải tên)
+            function patchInvoicesEditToUseMa() {
+                if (typeof window.Invoices_edit !== 'function') return;
+                const orig = window.Invoices_edit;
+                window.Invoices_edit = function (id) {
+                    orig(id);
+                    try {
+                        const inv = (JSON.parse(localStorage.getItem('invoices') || '[]') || []).find(i => i.id === id);
+                        const sel = document.getElementById('invoices-edit-name');
+                        if (sel && sel.tagName.toLowerCase() === 'select') {
+                            const ma = inv?.products?.[0]?.ma || '';
+                            sel.value = ma || '';
+                            // Tự gợi ý lại đơn giá
+                            sel.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    } catch (e) { }
+                };
+            }
+
+            // Khởi tạo khi DOM sẵn sàng
+            document.addEventListener('DOMContentLoaded', () => {
+                // Thay input -> select (create + edit)
+                const selCreate = replaceInputWithSelect('invoices-product-name'); // trong modal tạo
+                const selEdit = replaceInputWithSelect('invoices-edit-name');    // trong modal sửa
+
+                // Gợi ý đơn giá nhập gần nhất khi chọn
+                hookAutoFillLastCost(selCreate, 'invoices-product-price');
+                hookAutoFillLastCost(selEdit, 'invoices-edit-price');
+
+                // Bảo đảm Invoices_edit set theo MÃ
+                patchInvoicesEditToUseMa();
+            });
+        })();
+        window.dispatchEvent(new Event('pricing_data_changed'));
+
+    </script>
+</body>
+
+</html>

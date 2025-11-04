@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Giỏ hàng</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+  /* Nút nav */
+  .nav-btn{margin-left:12px;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#f3f4f6;cursor:pointer}
+  .nav-btn:hover{background:#e5e7eb}
+  .nav-primary{background:#2563eb;border-color:#2563eb;color:#fff}
+  .nav-primary:hover{filter:brightness(.95)}
+  /* Modal */
+  .auth-modal{position:fixed;inset:0;display:none}
+  .auth-modal.open{display:block}
+  .auth-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+  .auth-panel{position:relative;z-index:1;width:100%;max-width:480px;margin:8vh auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:22px}
+  .auth-close{position:absolute;right:10px;top:6px;font-size:26px;border:0;background:transparent;cursor:pointer;color:#6b7280}
+  .auth-close:hover{color:#111827}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tabs button{flex:1;padding:10px;border-radius:10px;border:1px solid #e5e7eb;background:#f9fafb;font-weight:600;cursor:pointer}
+  .tabs .active{background:#2563eb;border-color:#2563eb;color:#fff}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:14px;color:#374151;margin-bottom:6px}
+  .field input{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px}
+  .field input:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+  .row{display:flex;gap:8px}
+  /* (thay vì .btn và .btn-primary) */
+.auth-panel .auth-btn{
+  width:100%;
+  padding:10px 14px;
+  border:0;
+  border-radius:8px;
+  cursor:pointer;
+}
+.auth-panel .auth-btn-primary{
+  background:#2563eb;
+  color:#fff;
+  font-weight:600;
+}
+  .muted{font-size:13px;color:#6b7280}
+  /* ==== Checkout popup tweaks ==== */
+#checkoutModal .auth-panel{
+  max-width: 520px;             /* rộng hơn chút, vẫn gọn */
+  width: calc(100vw - 24px);
+  box-sizing: border-box;
+}
+#checkoutModal .checkout-form .row{ align-items: flex-end; }
+#checkoutModal .checkout-form .auth-btn{ width: auto; } /* ghi đè 100% */
+#checkoutModal fieldset{
+  border:1px solid #e5e7eb; border-radius:10px; padding:10px 12px;
+}
+#checkoutModal legend{ padding:0 6px; }
+
+
+</style>
+
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <h1 class="logo"><a href="index.html">MyGearVN</a></h1>
+    <nav>
+      <a href="cart.html" class="cart-link">Giỏ hàng (<span id="cart-count">0</span>)</a>
+      <button class="nav-btn" id="open-login">Đăng nhập</button>
+      <button class="nav-btn nav-primary" id="open-register">Đăng ký</button>
+    </nav>
+  </div>
+</header>
+
+
+<main class="container">
+<h2>Giỏ hàng của bạn</h2>
+<div id="cart-container"></div>
+<div class="cart-actions">
+<a href="index.html" class="btn">Tiếp tục mua sắm</a>
+<a href="checkout.html" id="go-checkout" class="btn primary">Thanh toán</a>
+</div>
+</main>
+
+
+<footer class="footer">
+  <div class="footer-container">
+    <div class="footer-cols">
+      <div class="col">
+        <h4>MYGEARVN</h4>
+        <ul>
+          <li><a href="#">Giới thiệu</a></li>
+          <li><a href="#">Tuyển dụng</a></li>
+          <li><a href="#">Liên hệ</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>CHÍNH SÁCH</h4>
+        <ul>
+          <li><a href="#">Chính sách bảo hành</a></li>
+          <li><a href="#">Chính sách giao hàng</a></li>
+          <li><a href="#">Chính sách bảo mật</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>THÔNG TIN</h4>
+        <ul>
+          <li><a href="#">Hệ thống cửa hàng</a></li>
+          <li><a href="#">Hướng dẫn mua hàng</a></li>
+          <li><a href="#">Hướng dẫn thanh toán</a></li>
+          <li><a href="#">Hướng dẫn trả góp</a></li>
+          <li><a href="#">Tra cứu địa chỉ bảo hành</a></li>
+        </ul>
+      </div>
+      <div class="col">
+        <h4>TỔNG ĐÀI HỖ TRỢ (8:00 – 21:00)</h4>
+        <ul>
+          <li>Mua hàng: <a href="#">1900.5301</a></li>
+          <li>Bảo hành: <a href="#">1900.5325</a></li>
+          <li>Khiếu nại: <a href="#">1800.6173</a></li>
+          <li>Email: <a href="mailto:cskh@mygearvn.com">cskh@mygearvn.com</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="social">
+        <span>KẾT NỐI VỚI CHÚNG TÔI</span>
+        <div class="icons">
+          <a href="#">
+            <img src="./img/fb.png" alt="Facebook" />
+          </a>
+          <a href="#">
+            <img src="./img/tiktok.png" alt="TikTok" />
+          </a>
+          <a href="#">
+            <img src="./img/zalo.png" alt="Zalo" />
+          </a>
+          <a href="#">
+            <img src="./img/yt.png" alt="YouTube" />
+          </a>
+        </div>
+      </div>
+
+      <div class="payments">
+        <span>CÁCH THỨC THANH TOÁN</span>
+        <div class="icons">
+          <a href="#">
+            <img src="./img/momo.png" alt="MoMo" />
+          </a>
+          <a href="#">
+            <img src="./img/zalopay.png" alt="ZaloPay" />
+          </a>
+          <a href="#">
+            <img src="./img/COD.png" alt="COD" />
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-license">
+      © 2025 MyGearVN
+    </div>
+  </div>
+</footer>
+
+<div class="auth-modal" id="authModal" aria-hidden="true">
+  <div class="auth-overlay" data-close></div>
+  <div class="auth-panel" role="dialog" aria-modal="true">
+    <button class="auth-close" title="Đóng" data-close>&times;</button>
+
+    <!-- Tiêu đề động -->
+    <h3 id="authTitle" style="margin:6px 0 14px;font-weight:700;font-size:20px;color:#111827">
+      Đăng nhập
+    </h3>
+
+    <!-- Ô thông báo (mới) -->
+    <p id="authMsg" class="auth-msg" hidden></p>
+
+    <!-- LOGIN -->
+    <form id="loginForm">
+      <div class="field">
+        <label for="luser">Tên đăng nhập</label>
+        <input id="luser" name="username" required placeholder="Account">
+      </div>
+      <div class="field">
+        <label for="lpass">Mật khẩu</label>
+        <input id="lpass" name="password" type="password" required placeholder="••••••••">
+      </div>
+      <button class="auth-btn auth-btn-primary" type="submit">Đăng nhập</button>
+      <p class="muted" style="margin-top:8px">
+        Chưa có tài khoản?
+        <a href="#" id="switchToRegister">Đăng ký ngay</a>
+      </p>
+    </form>
+
+    <!-- REGISTER -->
+    <form id="registerForm" style="display:none">
+      <div class="row">
+        <div class="field" style="flex:1">
+          <label for="rname">Họ tên</label>
+          <input id="rname" name="fullname" required placeholder="Nguyễn Văn A">
+        </div>
+        <div class="field" style="flex:1">
+          <label for="ruser">Tên đăng nhập</label>
+          <input id="ruser" name="username" required placeholder="yourname">
+        </div>
+      </div>
+      <div class="field">
+        <label for="remail">Email</label>
+        <input id="remail" name="email" type="email" required placeholder="you@example.com">
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <label for="rpass">Mật khẩu</label>
+          <input id="rpass" name="password" type="password" required minlength="6" placeholder="Ít nhất 6 ký tự">
+        </div>
+        <div class="field" style="flex:1">
+          <label for="rcfm">Nhập lại mật khẩu</label>
+          <input id="rcfm" name="confirm" type="password" required minlength="6" placeholder="Nhập lại mật khẩu">
+        </div>
+      </div>
+      <button class="auth-btn auth-btn-primary" type="submit">Tạo tài khoản</button>
+      <p class="muted" style="margin-top:8px">
+        Đã có tài khoản?
+        <a href="#" id="switchToLogin">Đăng nhập</a>
+      </p>
+    </form>
+  </div>
+</div>
+<!-- === CHECKOUT POPUP (dùng cùng style với auth-modal) === -->
+<!-- Modal thanh toán -->
+<div class="auth-modal" id="checkoutModal" aria-hidden="true">
+  <div class="auth-overlay" data-checkout-close></div>
+  <div class="auth-panel" role="dialog" aria-modal="true">
+    <button class="auth-close" title="Đóng" data-checkout-close>&times;</button>
+    <h3 style="margin:6px 0 14px;font-weight:700;font-size:20px;color:#111827">
+      Thanh toán
+    </h3>
+
+    <!-- Tóm tắt giỏ hàng -->
+    <div id="checkout-summary" class="muted" style="margin-bottom:10px"></div>
+
+    <!-- Form thanh toán -->
+    <form id="checkout-form" class="checkout-form">
+      <div class="field">
+        <label>Họ & tên
+          <input type="text" name="name" required>
+        </label>
+      </div>
+
+      <!-- Địa chỉ đã lưu -->
+      <div class="field">
+        <label>Địa chỉ đã lưu</label>
+        <select id="address-saved"></select>
+      </div>
+
+      <!-- Nhập địa chỉ giao hàng -->
+      <div class="row">
+        <label style="flex:1">Địa chỉ giao hàng
+          <input class="address-input" type="text" name="address" required placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành">
+        </label>
+        <button type="button" id="btn-set-default" class="auth-btn" style="align-self:flex-end;flex:0 0 auto;margin:0 0 12px 8px;width:auto">
+          Đặt làm mặc định
+        </button>
+      </div>
+
+      <div class="field">
+        <label>Số điện thoại
+          <input type="tel" name="phone" required>
+        </label>
+      </div>
+
+      <!-- Phương thức thanh toán -->
+      <fieldset class="field" style="margin-top:4px">
+        <legend style="font-size:14px;color:#374151;margin-bottom:6px">Phương thức thanh toán</legend>
+        <label class="payment-radio" style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <input type="radio" name="payment_method" value="COD" checked> Thanh toán khi nhận hàng (COD)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px">
+          <input type="radio" name="payment_method" value="ONLINE"> Thanh toán trực tuyến
+        </label>
+      </fieldset>
+
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="auth-btn" data-checkout-close>Hủy</button>
+        <button type="submit" class="auth-btn auth-btn-primary">Xác nhận & Thanh toán</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+<div id="orderSuccessModal" class="success-modal" role="dialog" aria-modal="true" aria-labelledby="orderSuccessTitle">
+  <div class="success-overlay" data-success-close></div>
+  <div class="success-panel">
+    <div class="success-head">
+      <div style="font-size:20px">🎉</div>
+      <h3 id="orderSuccessTitle" style="margin:0;font-size:18px;font-weight:600">Đặt hàng thành công</h3>
+      <button class="btn" style="margin-left:auto" data-success-close>Đóng</button>
+    </div>
+    <div id="orderSuccessBody" class="success-body"></div>
+    
+  </div>
+</div>
+<!-- PROFILE POPUP -->
+<div class="auth-modal" id="profileModal" aria-hidden="true">
+  <div class="auth-overlay" data-profile-close></div>
+  <div class="auth-panel" role="dialog" aria-modal="true" style="max-width:420px">
+    <button class="auth-close" title="Đóng" data-profile-close>&times;</button>
+
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px">
+      <div style="width:60px;height:60px;border-radius:9999px;background:#f3f4f6;
+                  display:flex;align-items:center;justify-content:center;font-size:28px">👤</div>
+      <div>
+        <div id="pName" style="font-weight:700;font-size:18px">—</div>
+        <div id="pUsername" class="muted">@—</div>
+      </div>
+    </div>
+
+    <!-- Thông báo nhỏ trong modal -->
+    <p id="profileMsg" class="muted" hidden></p>
+
+    <!-- VIEW MODE -->
+    <div id="profileView">
+      <div style="border-top:1px solid #e5e7eb;padding-top:10px;font-size:14px">
+        <div style="display:flex;justify-content:space-between;margin:6px 0">
+          <span>Email</span><strong id="pEmail">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin:6px 0">
+          <span>Ngày đăng ký</span><strong id="pDate">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin:6px 0">
+          <span>Đơn đã mua</span><strong id="pOrders">0</strong>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="auth-btn auth-btn-primary" id="profileEditBtn">Sửa thông tin</button>
+        <button class="auth-btn" id="profileOrdersBtn">Xem đơn đã mua</button>
+        <button class="auth-btn" id="profileLogout" style="background:#ef4444;color:#fff">Đăng xuất</button>
+      </div>
+    </div>
+
+    <!-- EDIT MODE -->
+    <form id="profileForm" style="display:none">
+      <div class="field">
+        <label for="pf_name">Tên khách hàng</label>
+        <input id="pf_name" name="name" required>
+      </div>
+      <div class="field">
+        <label for="pf_user">Username</label>
+        <input id="pf_user" name="username" required>
+      </div>
+      <div class="field">
+        <label for="pf_email">Email</label>
+        <input id="pf_email" name="email" type="email" required>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="auth-btn auth-btn-primary" type="submit">Lưu</button>
+        <button class="auth-btn" type="button" id="profileCancel">Hủy</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- LIST POPUP: danh sách đơn của tôi -->
+<div id="ordersListModal" class="success-modal" role="dialog" aria-modal="true" aria-labelledby="ordersListTitle" style="display:none">
+  <div class="success-overlay" style="pointer-events:none"></div><!-- KHÔNG đóng khi click nền -->
+  <div class="success-panel">
+    <div class="success-head">
+      <div style="font-size:20px">🧾</div>
+      <h3 id="ordersListTitle" style="margin:0;font-size:18px;font-weight:600">Đơn hàng của tôi</h3>
+      <button class="btn" style="margin-left:auto" data-orders-close>Đóng</button>
+    </div>
+    <div id="ordersListBody" class="success-body"></div>
+  </div>
+</div>
+
+<!-- DETAIL POPUP: chi tiết 1 đơn (giống popup đặt hàng thành công) -->
+<div id="orderDetailModal" class="success-modal" role="dialog" aria-modal="true" aria-labelledby="orderDetailTitle" style="display:none">
+  <div class="success-overlay" style="pointer-events:none"></div><!-- KHÔNG đóng khi click nền -->
+  <div class="success-panel">
+    <div class="success-head">
+      <div style="font-size:20px">📦</div>
+      <h3 id="orderDetailTitle" style="margin:0;font-size:18px;font-weight:600">Chi tiết đơn hàng</h3>
+      <button class="btn" style="margin-left:auto" data-odetail-close>Đóng</button>
+    </div>
+    <div id="orderDetailBody" class="success-body"></div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
