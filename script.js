@@ -35,7 +35,7 @@ const NOTICE_KEY = "one_time_notice";
 function pushNotice(msg) {
   try {
     sessionStorage.setItem(NOTICE_KEY, String(msg || ""));
-  } catch (e) {}
+  } catch (e) { }
 }
 function popNotice() {
   try {
@@ -215,7 +215,7 @@ function loadProducts() {
         return { ...p, displayPrice: sell > 0 ? sell : Number(p.gia || 0) };
       });
     }
-  } catch (e) {}
+  } catch (e) { }
   return [];
 }
 
@@ -404,9 +404,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const hasDetails = Array.isArray(p.chitiet) && p.chitiet.length > 0;
         const chipsHtml = hasDetails
           ? `<div class="chips">${p.chitiet
-              .slice(0, 4)
-              .map(v => `<span class="chip">${esc(v)}</span>`)
-              .join("")}</div>`
+            .slice(0, 4)
+            .map(v => `<span class="chip">${esc(v)}</span>`)
+            .join("")}</div>`
           : "";
 
         const showPrice = Number(p.displayPrice) > 0
@@ -498,20 +498,18 @@ if (document.title.includes("Chi tiết sản phẩm")) {
           <div class="price-container">
             <span class="sell-price">${formatVND(sellPrice)}₫</span>
             <span class="original-price">${formatVND(originalPrice)}₫</span>
-            ${
-              discountPercent > 0
-                ? `<span class="discount-badge">-${discountPercent}%</span>`
-                : ""
-            }
+            ${discountPercent > 0
+            ? `<span class="discount-badge">-${discountPercent}%</span>`
+            : ""
+          }
           </div>
         `;
       } else {
         // Chỉ có giá bán (hoặc không có giá)
         priceHtml = `
           <div class="price-container">
-            <span class="sell-price">${
-              sellPrice > 0 ? formatVND(sellPrice) + "₫" : "Liên hệ"
-            }</span>
+            <span class="sell-price">${sellPrice > 0 ? formatVND(sellPrice) + "₫" : "Liên hệ"
+          }</span>
           </div>
         `;
       }
@@ -522,20 +520,20 @@ if (document.title.includes("Chi tiết sản phẩm")) {
         <div class="thumbnail-gallery">
           <button class="thumb-item active"><img src="${img}" alt="thumb 1"></button>
           <button class="thumb-item"><img src="${svgPlaceholder(
-            80,
-            80,
-            "Thumb 2"
-          )}" alt="thumb 2"></button>
+        80,
+        80,
+        "Thumb 2"
+      )}" alt="thumb 2"></button>
           <button class="thumb-item"><img src="${svgPlaceholder(
-            80,
-            80,
-            "Thumb 3"
-          )}" alt="thumb 3"></button>
+        80,
+        80,
+        "Thumb 3"
+      )}" alt="thumb 3"></button>
           <button class="thumb-item"><img src="${svgPlaceholder(
-            80,
-            80,
-            "Thumb 4"
-          )}" alt="thumb 4"></button>
+        80,
+        80,
+        "Thumb 4"
+      )}" alt="thumb 4"></button>
         </div>
       `;
 
@@ -639,9 +637,8 @@ if (document.title.includes("Giỏ hàng")) {
 <h4>${item.ten}</h4>
 <p>${formatVND(item.gia)}₫</p>
 <p>Số lượng:
-<input type="number" min="1" value="${item.qty}" data-ma="${
-              item.ma
-            }" class="qty-input">
+<input type="number" min="1" value="${item.qty}" data-ma="${item.ma
+              }" class="qty-input">
 </p>
 <button class="btn danger" onclick="removeFromCart('${item.ma}')">Xóa</button>
 </div>
@@ -747,11 +744,11 @@ function buildCheckoutSummary() {
 <h3 style="font-weight:600;margin-bottom:6px">Tóm tắt đơn hàng</h3>
 <ul style="margin:0 0 6px 16px;padding:0;list-style:disc">
 ${cart
-  .map((i) => {
-    total += (i.gia || 0) * (i.qty || 0);
-    return `<li>${i.ten} ×${i.qty} — ${formatVND(i.gia)}₫</li>`;
-  })
-  .join("")}
+      .map((i) => {
+        total += (i.gia || 0) * (i.qty || 0);
+        return `<li>${i.ten} ×${i.qty} — ${formatVND(i.gia)}₫</li>`;
+      })
+      .join("")}
 </ul>
 <p><strong>Tổng cộng: ${formatVND(total)}₫</strong></p>
 `;
@@ -1496,13 +1493,13 @@ function orderSummaryHtml(order) {
     String(s || "").replace(
       /[&<>"']/g,
       (c) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        }[c])
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[c])
     );
   const created = new Date(order.createdAt).toLocaleString("vi-VN");
   const paidText = order.payment?.paid ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN";
@@ -1532,11 +1529,10 @@ function orderSummaryHtml(order) {
 <p style="margin:8px 0">
 <strong>Trạng thái thanh toán:</strong>
 <span style="padding:2px 8px;border-radius:9999px;border:1px solid #e5e7eb;
-${
-  order.payment?.paid
-    ? "background:#ecfdf5;color:#065f46;border-color:#bbf7d0"
-    : "background:#fef2f2;color:#991b1b;border-color:#fecaca"
-}">
+${order.payment?.paid
+      ? "background:#ecfdf5;color:#065f46;border-color:#bbf7d0"
+      : "background:#fef2f2;color:#991b1b;border-color:#fecaca"
+    }">
 ${paidText}
 </span>
 </p>
@@ -1602,9 +1598,9 @@ function _esc(s) {
   return String(s || "").replace(
     /[&<>"']/g,
     (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
-        c
-      ])
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
+      c
+    ])
   );
 }
 
