@@ -1,4 +1,3 @@
-
 // ======= LocalStorage Keys =======
 const LS_PRODUCTS_KEY = "admin_products";
 const LS_CART_KEY = "cart";
@@ -1603,7 +1602,6 @@ function _esc(s) {
     ])
   );
 }
-
 function openOrdersListModal() {
   const cur = getCurrentUser();
   if (!cur) {
@@ -1613,49 +1611,72 @@ function openOrdersListModal() {
 
   const listModal = document.getElementById("ordersListModal");
   const body = document.getElementById("ordersListBody");
-  const orders = getUserOrders(cur.id) || [];
+
+  // Lấy dữ liệu từ user và admin
+  const userOrders = getUserOrders(cur.id) || [];
+  const adminOrders = JSON.parse(localStorage.getItem(LS_ORDERS_KEY) || "[]");
+
+  // Đồng bộ trạng thái mới nhất từ admin_orders
+  const orders = userOrders.map((uOrder) => {
+    const adminMatch = adminOrders.find((a) => a.id === uOrder.id);
+    if (adminMatch && adminMatch.status) {
+      return { ...uOrder, status: adminMatch.status };
+    }
+    return uOrder;
+  });
 
   if (!orders.length) {
     body.innerHTML = '<p class="muted">Bạn chưa có đơn hàng nào.</p>';
   } else {
     const rows = orders
       .map((o) => {
-        const buyer =
-          o.shipping?.receiverName || cur.name || cur.username || "—";
-        const time = o.createdAt
-          ? new Date(o.createdAt).toLocaleString("vi-VN")
-          : "—";
+        const buyer = o.shipping?.receiverName || cur.name || cur.username || "—";
+        const time = o.createdAt ? new Date(o.createdAt) : null;
+        const timeStr = time ? time.toLocaleString("vi-VN") : "—";
+
+        // ✅ Tính ngày dự kiến = ngày mua + 5 ngày
+        let duKien = "—";
+        if (time) {
+          const duKienDate = new Date(time);
+          duKienDate.setDate(duKienDate.getDate() + 5);
+          duKien = duKienDate.toLocaleDateString("vi-VN");
+        }
+
+        const status = o.status || "Đang xử lý";
+
         return `
 <tr>
-<td style="white-space:nowrap">${_esc(o.id)}</td>
-<td>${_esc(buyer)}</td>
-<td style="white-space:nowrap">${_esc(time)}</td>
-<td style="text-align:right;white-space:nowrap"><strong>${formatVND(
-          o.total
-        )}₫</strong></td>
-<td style="text-align:right">
-<button class="btn primary" data-oid="${_esc(o.id)}">Chi tiết</button>
-</td>
+  <td style="white-space:nowrap">${_esc(o.id)}</td>
+  <td>${_esc(buyer)}</td>
+  <td style="white-space:nowrap">${_esc(timeStr)}</td>
+  <td style="white-space:nowrap">${_esc(duKien)}</td>
+  <td style="text-align:right;white-space:nowrap"><strong>${formatVND(o.total)}₫</strong></td>
+  <td style="white-space:nowrap">${_esc(status)}</td>
+  <td style="text-align:right">
+    <button class="btn primary" data-oid="${_esc(o.id)}">Chi tiết</button>
+  </td>
 </tr>`;
       })
       .join("");
 
     body.innerHTML = `
 <table class="orders-table">
-<thead>
-<tr>
-<th>Mã đơn</th>
-<th>Người mua</th>
-<th>Ngày mua</th>
-<th>Tổng tiền</th>
-<th></th>
-</tr>
-</thead>
-<tbody>${rows}</tbody>
+  <thead>
+    <tr>
+      <th>Mã đơn</th>
+      <th>Người mua</th>
+      <th>Ngày mua</th>
+      <th>Dự kiến giao</th>
+      <th>Tổng tiền</th>
+      <th>Trạng thái</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
 </table>`;
   }
 
-  // Event delegation cho nút Chi tiết
+  // Bắt sự kiện xem chi tiết
   body.onclick = (e) => {
     const btn = e.target.closest("[data-oid]");
     if (!btn) return;
@@ -1664,6 +1685,8 @@ function openOrdersListModal() {
 
   openStacked(listModal);
 }
+
+
 
 // Tìm đơn đầy đủ (ưu tiên admin_orders để có payment/method)
 function findOrderByIdAll(orderId, uid) {
@@ -1696,6 +1719,78 @@ function openOrderDetailModal(orderId) {
   body.innerHTML = orderSummaryHtml(order); // tận dụng renderer đã có
   openStacked(modal);
 }
+
+
+/** Regex đơn giản – đúng nhu cầu abc@domain.tld */
+function isValidEmail(email) {
+  const v = String(email || '').trim();
+  // tránh space, có 1 '@', có dấu chấm sau domain
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+/** Hiện lỗi thân thiện ngay trên input */
+function validateEmailInput(inputEl) {
+  const val = inputEl.value.trim();
+  if (!val) {
+    inputEl.setCustomValidity('Vui lòng nhập email.');
+  } else if (!isValidEmail(val)) {
+    inputEl.setCustomValidity('Email không hợp lệ. Vui lòng nhập theo dạng abc@example.com');
+  } else {
+    inputEl.setCustomValidity(''); // xoá lỗi
+  }
+  // Gọi để trình duyệt hiển thị/ẩn tooltip lỗi ngay
+  inputEl.reportValidity();
+}
+
+/** —— 1) Hồ sơ: nút Lưu ——
+ *  Giữ nguyên showProfileMsg(...) của bạn
+ *  Gọi khi bấm Lưu hồ sơ
+ */
+function onSaveProfile() {
+  const name = document.getElementById('pf_name')?.value?.trim();
+  const username = document.getElementById('pf_username')?.value?.trim();
+  const emailEl = document.getElementById('pf_email');
+  const email = String(emailEl?.value || '').trim();
+
+  if (!name || !username || !email) {
+    showProfileMsg('Vui lòng nhập đầy đủ thông tin.', false);
+    if (!email) emailEl?.focus();
+    return;
+  }
+  if (!isValidEmail(email)) {
+    // hiện lỗi HTML5 ngay trên input + message tổng quát của bạn
+    validateEmailInput(emailEl);
+    showProfileMsg('Email không hợp lệ.', false);
+    emailEl?.focus();
+    return;
+  }
+
+  // ... tiếp tục xử lý lưu hồ sơ
+  showProfileMsg('Đã lưu hồ sơ.', true);
+}
+
+/** —— 2) Đăng ký: submit form đăng ký —— */
+document.addEventListener('DOMContentLoaded', function () {
+  const registerForm = document.getElementById('registerForm');
+  const rEmail = document.getElementById('remail');
+
+  if (rEmail) {
+    // validate realtime khi gõ
+    rEmail.addEventListener('input', () => validateEmailInput(rEmail));
+    rEmail.addEventListener('blur', () => validateEmailInput(rEmail));
+  }
+
+  if (registerForm) {
+    registerForm.addEventListener('submit', function (e) {
+      // chặn submit nếu email không hợp lệ
+      if (rEmail) validateEmailInput(rEmail);
+      if (!rEmail || !isValidEmail(rEmail.value)) {
+        e.preventDefault();
+        rEmail?.focus();
+      }
+    });
+  }
+});
 
 
 
