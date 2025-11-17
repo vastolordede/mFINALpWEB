@@ -951,7 +951,7 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
                     <span class="close-btn" onclick="closeForm('them')">&times;</span>
                     <h2 class="text-xl font-bold mb-3">Thêm sản phẩm</h2>
                     <div class="flex flex-col space-y-2">
-                        <input type="text" id="masp" placeholder="Mã sản phẩm" class="border p-2 rounded">
+                        <input disabled type="text" id="masp" placeholder="Mã sản phẩm" class="border p-2 rounded">
                         <input type="text" id="tensp" placeholder="Tên sản phẩm" class="border p-2 rounded">
                         <button onclick="openDetailPopup()"
                             class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto">
@@ -1841,6 +1841,25 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
             closeDetailPopup();
         }
 
+        // Random mã sản phẩm, dạng: SP-20251117-AB3X
+function genProductCode() {
+  const all = lsGetAll(); // dùng chung store với addProduct
+  const existing = new Set(all.map(p => String(p.ma || "").toUpperCase()));
+
+  let code;
+  do {
+    const now = new Date();
+    const y = String(now.getFullYear());          // 2025
+    const m = String(now.getMonth() + 1).padStart(2, "0"); // 01-12
+    const d = String(now.getDate()).padStart(2, "0");      // 01-31
+    const rand = Math.random().toString(36).slice(2, 6).toUpperCase(); // 4 ký tự ngẫu nhiên
+
+    code = `SP-${y}${m}${d}-${rand}`; // ví dụ: SP-20251117-AB3X
+  } while (existing.has(code.toUpperCase())); // đảm bảo không trùng
+
+  return code;
+}
+
 
         // ============= Thêm sản phẩm =============
         function addProduct() {
@@ -2447,6 +2466,28 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
             const el = document.getElementById("form-" + loai);
             el.classList.remove('hidden');
             el.style.display = 'flex';
+
+               // Nếu mở form THÊM → auto sinh mã sản phẩm
+    if (loai === 'them') {
+        const maInput = document.getElementById("masp");
+        const tenInput = document.getElementById("tensp");
+        const nguonInput = document.getElementById("nguon");
+        const anhInput = document.getElementById("anh-them");
+        const previewImg = document.getElementById("preview-them");
+
+        if (maInput) {
+            maInput.value = genProductCode();
+            maInput.readOnly = true;     // không cho sửa tay (nếu muốn sửa thì bỏ dòng này)
+        }
+
+        // Reset các field khác cho sạch form
+        if (tenInput) tenInput.value = "";
+        if (nguonInput) nguonInput.value = "";
+        if (anhInput) anhInput.value = "";
+        if (previewImg) previewImg.src = "";
+        // nếu có pendingDetailsAdd thì cũng nên reset
+        if (Array.isArray(pendingDetailsAdd)) pendingDetailsAdd = [];
+    }
         }
         function closeForm(loai) {
             const el = document.getElementById("form-" + loai);
@@ -3335,6 +3376,8 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
                 const aggAll = INV_aggregateInOutByCodeInRange(null, null);         // toàn thời gian
                 const selectedType = (q('inv-filter-type')?.value || '').trim().toLowerCase();
 
+                const rows = [];
+
                 inv.forEach(p => {
                     const ap = adminProducts.find(a =>
                         String(a.ma || '').trim().toLowerCase() === String(p.ma || '').trim().toLowerCase()
@@ -3353,15 +3396,37 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
                         ? '<span class="text-red-600 font-semibold">Sắp hết hàng</span>'
                         : '<span class="text-green-600">Còn hàng</span>';
 
-                    tr.innerHTML = `
-      <td class="p-3 border-b">${p.ma || ''}</td>
-      <td class="p-3 border-b">${p.hienThiTen || p.ten || ''}</td>
-      <td class="p-3 border-b">${loai}</td>
-      <td class="p-3 border-b">${tonAll}</td>
-      <td class="p-3 border-b">${statusHtml}</td>
-      <td class="p-3 border-b">${(r.in || 0)} - ${(r.out || 0)}</td>
-    `;
-                    tbody.appendChild(tr);
+                       rows.push({
+            ma: p.ma || '',
+            ten: p.hienThiTen || p.ten || '',
+            loai,
+            tonAll,
+            statusHtml,
+            inout: `${r.in || 0} - ${r.out || 0}`
+        });
+    });
+
+    // 2️⃣ Sort: sản phẩm có tonAll < 50 lên trước
+    rows.sort((a, b) => {
+        // True < False => -1 → lên đầu
+        const aLow = a.tonAll < 50;
+        const bLow = b.tonAll < 50;
+        if (aLow === bLow) return 0;
+        return aLow ? -1 : 1;
+    });
+
+    // 3️⃣ Render sau khi sort
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="p-3 border-b">${r.ma}</td>
+            <td class="p-3 border-b">${r.ten}</td>
+            <td class="p-3 border-b">${r.loai}</td>
+            <td class="p-3 border-b">${r.tonAll}</td>
+            <td class="p-3 border-b">${r.statusHtml}</td>
+            <td class="p-3 border-b">${r.inout}</td>
+        `;
+        tbody.appendChild(tr);
                 });
             }
             // ===== Áp khoảng lọc và lưu lại tonKho/nhapXuatTon trong storage (tuỳ chọn) =====
@@ -3513,6 +3578,43 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
                 sel.classList.remove('sel--new', 'sel--proc', 'sel--cancel', 'sel--shipped');
                 sel.classList.add(ORD_selectColorClass(sel.value));
             }
+            function ORD_handleStatusChange(sel) {
+    const oldValue = sel.getAttribute('data-old') || sel.value;
+    const newValue = sel.value;
+
+    // 1️⃣ Nếu đơn đã ở trạng thái Đã giao / Đã hủy
+    //    và user đang cố đổi sang trạng thái KHÁC → chặn + báo
+    if ((oldValue === 'Đã giao' || oldValue === 'Đã hủy') && newValue !== oldValue) {
+        sel.value = oldValue; // reset lại
+        alert('Trạng thái này đã bị khóa và không thể thay đổi.');
+        return;
+    }
+
+    // 2️⃣ Nếu chuyển sang trạng thái khóa → hỏi xác nhận
+    if (newValue === 'Đã giao' || newValue === 'Đã hủy') {
+        // Nếu oldValue == newValue (ví dụ chỉ gọi lại để set màu) → bỏ qua confirm
+        if (oldValue !== newValue) {
+            const ok = confirm(
+                `Bạn có chắc muốn chuyển sang trạng thái "${newValue}"?\n` +
+                `Sau khi chuyển, bạn sẽ KHÔNG THỂ đổi lại.`
+            );
+            if (!ok) {
+                sel.value = oldValue; // Hủy đổi, trả về trạng thái cũ
+                return;
+            }
+        }
+    }
+
+    // 3️⃣ Cập nhật màu theo trạng thái hiện tại
+    ORD_applySelectColor(sel);
+
+    // 4️⃣ Lưu lại trạng thái hiện tại cho lần sau
+    sel.setAttribute('data-old', sel.value);
+
+    // 5️⃣ Cập nhật vào localStorage / mảng order
+    ORD_updateStatus(sel.dataset.id, sel.value, sel); // (giữ như bạn đang dùng)
+}
+
             // ===== Đồng bộ tên KH từ admin_users (prefer userId, fallback name) =====
             const USR_LS_KEY = 'admin_users';
             function ORD_getUsers() {
@@ -3565,20 +3667,20 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
             });
 
             function ORD_renderTable(list) {
-                while (ordTbody.firstChild) ordTbody.removeChild(ordTbody.firstChild);
-                if (!list.length) {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td colspan="6" class="p-6 text-center text-gray-500">Chưa có đơn nào.</td>`;
-                    ordTbody.appendChild(tr);
-                    return;
-                }
+    while (ordTbody.firstChild) ordTbody.removeChild(ordTbody.firstChild);
+    if (!list.length) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="6" class="p-6 text-center text-gray-500">Chưa có đơn nào.</td>`;
+        ordTbody.appendChild(tr);
+        return;
+    }
 
-                list.forEach((o) => {                      // <-- tính ở đây
-                    const displayName = ORD_resolveCustomerName(o);
+    list.forEach((o) => {
+        const displayName = ORD_resolveCustomerName(o);
 
-                    const tr = document.createElement('tr');
-                    tr.className = 'border-b';
-                    tr.innerHTML = `
+        const tr = document.createElement('tr');
+        tr.className = 'border-b';
+        tr.innerHTML = `
       <td class="p-3 font-medium">${o.id || ''}</td>
       <td class="p-3">
         <div class="font-semibold">${displayName}</div>
@@ -3587,11 +3689,16 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
       <td class="p-3">${ORD_fmtDate(o.createdAt)}</td>
       <td class="p-3">${ORD_formatVND(o.total || 0)}</td>
       <td class="p-3">
-        <select class="status-select ${ORD_selectColorClass(o.status)}" data-id="${o.id || ''}" title="Đổi tình trạng">
-          <option class="opt-new"    value="Mới đặt"  ${o.status === 'Mới đặt' ? 'selected' : ''}>Mới đặt</option>
-          <option class="opt-proc"   value="Đã xử lý" ${o.status === 'Đã xử lý' ? 'selected' : ''}>Đã xử lý</option>
-          <option class="opt-cancel" value="Đã hủy"   ${o.status === 'Đã hủy' ? 'selected' : ''}>Đã hủy</option>
-          <option class="opt-shipped"value="Đã giao"  ${o.status === 'Đã giao' ? 'selected' : ''}>Đã giao</option>
+        <select
+          class="status-select ${ORD_selectColorClass(o.status)}"
+          data-id="${o.id || ''}"
+          data-old="${o.status || ''}"
+          title="Đổi tình trạng"
+        >
+          <option class="opt-new"     value="Mới đặt"  ${o.status === 'Mới đặt' ? 'selected' : ''}>Mới đặt</option>
+          <option class="opt-proc"    value="Đã xử lý" ${o.status === 'Đã xử lý' ? 'selected' : ''}>Đã xử lý</option>
+          <option class="opt-cancel"  value="Đã hủy"   ${o.status === 'Đã hủy' ? 'selected' : ''}>Đã hủy</option>
+          <option class="opt-shipped" value="Đã giao"  ${o.status === 'Đã giao' ? 'selected' : ''}>Đã giao</option>
         </select>
       </td>
       <td class="p-3">
@@ -3600,17 +3707,24 @@ Tìm kiếm + Thêm + Giá bán (search-card). Không xoá gì cả, chỉ chèn
         </button>
       </td>
     `;
-                    ordTbody.appendChild(tr);
-                });
+        ordTbody.appendChild(tr);
+    });
 
-                // Gắn events: đổi trạng thái + xem chi tiết
-                ordTbody.querySelectorAll('select.status-select').forEach(sel => {
-                    sel.addEventListener('change', () => ORD_updateStatus(sel.dataset.id, sel.value, sel));
-                });
-                ordTbody.querySelectorAll('button[data-role="detail"]').forEach(btn => {
-                    btn.addEventListener('click', () => ORD_openDetail(btn.dataset.id));
-                });
-            }
+    // Gắn events: đổi trạng thái + xem chi tiết
+    ordTbody.querySelectorAll('select.status-select').forEach(sel => {
+        // Set màu ban đầu (không confirm gì hết)
+        ORD_applySelectColor(sel);
+
+        sel.addEventListener('change', () => {
+            ORD_handleStatusChange(sel);
+        });
+    });
+
+    ordTbody.querySelectorAll('button[data-role="detail"]').forEach(btn => {
+        btn.addEventListener('click', () => ORD_openDetail(btn.dataset.id));
+    });
+}
+
 
             function ORD_updateStatus(id, value, selEl) {
                 const all = ORD_lsGetAll();

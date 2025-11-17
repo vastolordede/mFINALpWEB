@@ -555,7 +555,7 @@ if (document.title.includes("Chi tiết sản phẩm")) {
 
           <div class="action-buttons">
               <button onclick="addToCart('${p.ma}')" class="btn-buy-now">
-               <strong>MUA NGAY</strong>
+               <strong>Thêm Vào Giỏ Hàng</strong>
                <span>Giao tận nơi hoặc nhận tại cửa hàng</span>
             </button>
 
@@ -1037,6 +1037,23 @@ window.addEventListener("resize", () => {
   }
 });
 
+function validatePassword(pw) {
+  const errors = [];
+
+  if (pw.length < 8) errors.push("Mật khẩu phải có ít nhất 8 ký tự.");
+  if (!/[a-z]/.test(pw)) errors.push("Mật khẩu phải chứa ít nhất 1 chữ thường (a–z).");
+  if (!/[A-Z]/.test(pw)) errors.push("Mật khẩu phải chứa ít nhất 1 chữ in hoa (A–Z).");
+  if (!/[0-9]/.test(pw)) errors.push("Mật khẩu phải chứa ít nhất 1 chữ số (0–9).");
+  if (!/[!@#$%^&*(),.?\":{}|<>]/.test(pw))
+    errors.push("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (!@#$...).");
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+
 // ======= Auth: Register & Login (NEW) =======
 registerFormEl?.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -1046,6 +1063,13 @@ registerFormEl?.addEventListener("submit", (e) => {
   const email = (fd.get("email") || "").trim();
   const password = String(fd.get("password") || "");
   const confirm = String(fd.get("confirm") || "");
+
+  const pwCheck = validatePassword(password);
+if (!pwCheck.valid) {
+  showAuthMsg("❌ " + pwCheck.errors.join("<br>"), false);
+  return;
+}
+
 
   if (password !== confirm) {
     showAuthMsg("❌ Mật khẩu nhập lại không khớp.", false);
@@ -1741,6 +1765,29 @@ function validateEmailInput(inputEl) {
   // Gọi để trình duyệt hiển thị/ẩn tooltip lỗi ngay
   inputEl.reportValidity();
 }
+
+function validatePasswordInput(inputEl) {
+  const pw = inputEl.value || "";
+
+  if (!pw) {
+    inputEl.setCustomValidity("Vui lòng nhập mật khẩu.");
+  } else if (pw.length < 8) {
+    inputEl.setCustomValidity("Mật khẩu phải có ít nhất 8 ký tự.");
+  } else if (!/[a-z]/.test(pw)) {
+    inputEl.setCustomValidity("Mật khẩu phải chứa ít nhất 1 chữ thường (a–z).");
+  } else if (!/[A-Z]/.test(pw)) {
+    inputEl.setCustomValidity("Mật khẩu phải chứa ít nhất 1 chữ in hoa (A–Z).");
+  } else if (!/[0-9]/.test(pw)) {
+    inputEl.setCustomValidity("Mật khẩu phải chứa ít nhất 1 chữ số (0–9).");
+  } else if (!/[!@#$%^&*(),.?\":{}|<>]/.test(pw)) {
+    inputEl.setCustomValidity("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt (!@#$...).");
+  } else {
+    inputEl.setCustomValidity(""); // OK
+  }
+
+  inputEl.reportValidity(); // hiển thị lỗi giống như email
+}
+
 
 /** —— 1) Hồ sơ: nút Lưu ——
  *  Giữ nguyên showProfileMsg(...) của bạn

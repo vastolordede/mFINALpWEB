@@ -330,11 +330,11 @@
         <div class="row">
           <div class="field" style="flex: 1">
             <label for="rpass">Mật khẩu</label>
-            <input id="rpass" name="password" type="password" required minlength="6" placeholder="Ít nhất 6 ký tự" />
+            <input oninput="validatePasswordInput(this)" id="rpass" name="password" type="password" required minlength="6" placeholder="Ít nhất 6 ký tự" />
           </div>
           <div class="field" style="flex: 1">
             <label for="rcfm">Nhập lại mật khẩu</label>
-            <input id="rcfm" name="confirm" type="password" required minlength="6" placeholder="Nhập lại mật khẩu" />
+            <input oninput="validatePasswordInput(this)" id="rcfm" name="confirm" type="password" required minlength="6" placeholder="Nhập lại mật khẩu" />
           </div>
         </div>
         <button class="auth-btn auth-btn-primary" type="submit">
